@@ -1,0 +1,95 @@
+.admin-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.back-link {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-user span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.admin-user button {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.admin-user button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.admin-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.admin-main h1 {
+  font-size: 2rem;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.admin-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.admin-cards {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.admin-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.admin-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.admin-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-hint {
+  font-size: 0.8rem !important;
+  opacity: 0.7;
+  margin-top: 0.5rem !important;
+}
