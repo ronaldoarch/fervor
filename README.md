@@ -70,6 +70,25 @@ cp -r skills/fervor ~/.openclaw/workspace/skills/
 
 Ver [OPENCLAW.md](OPENCLAW.md) para instruções completas.
 
+## Deploy (Coilify e similares)
+
+O projeto está pronto para deploy em plataformas como **Coilify**, Render, Railway, etc.
+
+### Configuração no Coilify
+
+1. **Build Command:** `npm run build`
+2. **Start Command:** `npm run start`
+3. **Variáveis de ambiente** (obrigatórias para o chat com GPT):
+   - `OPENAI_API_KEY` — sua chave da API OpenAI
+   - `OPENAI_MODEL` — (opcional) modelo, padrão: `gpt-4o`
+
+O servidor Express serve o frontend (SPA) e a API na mesma porta. Em produção, `NODE_ENV=production` é definido automaticamente pela plataforma.
+
+### Variáveis opcionais (OpenClaw)
+
+- `OPENCLAW_GATEWAY_URL` — URL do gateway OpenClaw
+- `OPENCLAW_GATEWAY_TOKEN` — token de autenticação
+
 ## Estrutura
 
 ```
