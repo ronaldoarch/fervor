@@ -1,6 +1,9 @@
 {
   "name": "fervor",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -8,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
+    "start": "node server/index.js",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
