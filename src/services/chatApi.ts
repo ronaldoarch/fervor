@@ -1,3 +1,5 @@
+import { getToken } from './authApi'
+
 const API_URL = '/api/chat'
 
 export async function sendToFervor(
@@ -9,6 +11,8 @@ export async function sendToFervor(
     'Content-Type': 'application/json',
   }
   if (apiKey) headers['x-api-key'] = apiKey
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
 
   const res = await fetch(API_URL, {
     method: 'POST',

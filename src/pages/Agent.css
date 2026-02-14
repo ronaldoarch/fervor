@@ -119,7 +119,7 @@
 }
 
 .btn-new-chat:hover {
-  background: #d63a52;
+  background: var(--accent-hover);
 }
 
 .conversations-list {
@@ -178,16 +178,19 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 200px;
 }
 
 .messages {
   flex: 1;
+  min-height: 150px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem 0;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .message {
@@ -302,7 +305,7 @@
 }
 
 .input-form button:hover:not(:disabled) {
-  background: #d63a52;
+  background: var(--accent-hover);
 }
 
 .input-form button:disabled {

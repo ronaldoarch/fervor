@@ -11,6 +11,8 @@ if (!process.env.OPENAI_API_KEY) {
 import express from 'express'
 import cors from 'cors'
 import OpenAI from 'openai'
+import { registerAuthRoutes } from './routes/auth.js'
+import { registerConversationRoutes } from './routes/conversations.js'
 
 const app = express()
 app.use(cors())
@@ -93,6 +95,9 @@ function getOpenClawConfig() {
   }
   return { url: url.replace(/\/$/, ''), token }
 }
+
+registerAuthRoutes(app)
+registerConversationRoutes(app)
 
 app.post('/api/chat', async (req, res) => {
   const { messages, userId } = req.body
@@ -177,8 +182,20 @@ app.get('/api/backend', (_, res) => {
   })
 })
 
+const distPath = path.join(__dirname, '..', 'dist')
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath))
+  app.get('*', (_, res) => res.sendFile(path.join(distPath, 'index.html')))
+}
+
 const PORT = process.env.PORT || 3001
 const openclaw = getOpenClawConfig()
+
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL não configurada. Configure no .env para usar autenticação e conversas.')
+  process.exit(1)
+}
+
 app.listen(PORT, () => {
   console.log(`Fervor API: http://localhost:${PORT}`)
   if (openclaw.token) {

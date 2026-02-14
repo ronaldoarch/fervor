@@ -1,13 +1,14 @@
 :root {
-  --bg-primary: #0f0f1a;
-  --bg-secondary: #1a1a2e;
-  --bg-tertiary: #16213e;
-  --accent: #e94560;
-  --accent-soft: #e9456066;
-  --text-primary: #edf2f4;
-  --text-secondary: #8d99ae;
-  --border: #2d2d44;
-  --success: #2ec4b6;
+  --bg-primary: #050B07;
+  --bg-secondary: #0a1510;
+  --bg-tertiary: #0f2015;
+  --accent: #A633ED;
+  --accent-soft: #A633ED66;
+  --accent-hover: #8b2bc4;
+  --text-primary: #e8f5e9;
+  --text-secondary: #7cb87a;
+  --border: #1a2e1f;
+  --success: #3AE001;
   --radius: 12px;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Outfit', system-ui, sans-serif;

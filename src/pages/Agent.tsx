@@ -120,7 +120,8 @@ export default function Agent() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const messages = storedMessages.length > 0 ? storedMessages : [INITIAL_MESSAGE]
+  const messages =
+    storedMessages.length > 0 ? storedMessages : [INITIAL_MESSAGE]
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
@@ -136,7 +137,9 @@ export default function Agent() {
 
   const addMessageAndReturn = (role: 'agent' | 'user', content: string, analise?: unknown): Message => {
     const newMsg: Message = {
-      id: crypto.randomUUID(),
+      id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       role,
       content,
       timestamp: new Date(),
@@ -144,16 +147,16 @@ export default function Agent() {
     }
     setMessages((prev) => {
       const isFirstUserMsg = prev.filter((m) => m.role === 'user').length === 0
-      const next = [
-        ...prev.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          timestamp: m.timestamp,
-          analise: m.analise,
-        })),
-        newMsg,
-      ]
+      const base = prev.length === 0 && role === 'user'
+        ? [{ ...INITIAL_MESSAGE, id: '0', timestamp: new Date() }]
+        : prev.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+            analise: (m as Message & { analise?: unknown }).analise,
+          }))
+      const next = [...base, newMsg]
       const title = role === 'user' && isFirstUserMsg
         ? content.slice(0, 40) + (content.length > 40 ? '...' : '')
         : undefined
@@ -277,7 +280,7 @@ export default function Agent() {
     setManifestacoes([])
     setIndiceManifestacao(0)
     setUseAI(null)
-    startNewConversation([{ ...INITIAL_MESSAGE, timestamp: new Date() }])
+    startNewConversation([{ ...INITIAL_MESSAGE, id: '0', timestamp: new Date() }])
   }
 
   const handleSelectConversation = (convId: string) => {

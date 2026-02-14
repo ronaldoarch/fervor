@@ -71,9 +71,13 @@
 }
 
 .login-error {
-  color: var(--accent);
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   font-size: 0.9rem;
   margin-bottom: 1rem;
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 .btn-login {
@@ -86,10 +90,11 @@
   font-size: 1rem;
   font-weight: 500;
   transition: background 0.2s, transform 0.1s;
+  touch-action: manipulation;
 }
 
 .btn-login:hover:not(:disabled) {
-  background: #d63a52;
+  background: var(--accent-hover);
 }
 
 .btn-login:active:not(:disabled) {
@@ -119,7 +124,7 @@
 }
 
 .link-btn:hover {
-  color: #d63a52;
+  color: var(--accent-hover);
 }
 
 .form-hint {

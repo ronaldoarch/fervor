@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Agent from './pages/Agent'
 import Admin from './pages/Admin'
+import InstallPrompt from './components/InstallPrompt'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -21,6 +22,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
@@ -41,5 +43,7 @@ export default function App() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <InstallPrompt />
+    </>
   )
 }

@@ -35,6 +35,8 @@ export default function Login() {
           setError(result.error || 'Erro ao cadastrar.')
         }
       }
+    } catch (err) {
+      setError('Erro ao processar. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -95,7 +97,11 @@ export default function Login() {
               <span className="form-hint">Mínimo 6 caracteres</span>
             )}
           </div>
-          {error && <p className="login-error">{error}</p>}
+          {error && (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          )}
           <button type="submit" className="btn-login" disabled={loading}>
             {loading
               ? mode === 'login'
@@ -114,7 +120,7 @@ export default function Login() {
         </p>
         {mode === 'login' && (
           <p className="login-hint">
-            Demo: admin@fervor.com / admin123
+            Após o seed: admin@fervor.com / admin123
           </p>
         )}
       </div>
