@@ -16,6 +16,7 @@ import OpenAI from 'openai'
 import { registerAuthRoutes } from './routes/auth.js'
 import { registerConversationRoutes } from './routes/conversations.js'
 import { getRelevantChunks, formatChunksForPrompt } from './knowledge.js'
+import { prisma } from './db.js'
 
 const app = express()
 app.use(cors())
@@ -157,7 +158,19 @@ if (!process.env.DATABASE_URL) {
   process.exit(1)
 }
 
-app.listen(PORT, () => {
-  console.log(`Fervor API: http://localhost:${PORT}`)
-  console.log('-> OpenAI (GPT)')
-})
+;(async () => {
+  try {
+    await prisma.$connect()
+    await prisma.$queryRaw`SELECT 1`
+  } catch (e) {
+    console.error('Erro ao conectar no banco:', e.message)
+    if (e.message?.includes('denied access')) {
+      console.error('Execute "npm run check-db" para diagnosticar. Verifique usuário, senha e se o banco existe.')
+    }
+    process.exit(1)
+  }
+  app.listen(PORT, () => {
+    console.log(`Fervor API: http://localhost:${PORT}`)
+    console.log('-> OpenAI (GPT)')
+  })
+})()

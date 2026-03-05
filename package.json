@@ -13,7 +13,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
-    "ingest": "node scripts/ingest-transcripts.js"
+    "ingest": "node scripts/ingest-transcripts.js",
+    "check-db": "node scripts/check-db.js"
   },
   "dependencies": {
     "@capacitor/cli": "^8.1.0",

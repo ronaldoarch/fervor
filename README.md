@@ -49,8 +49,36 @@ npm run dev
 Crie `.env` na raiz:
 
 ```
+DATABASE_URL=postgresql://user:password@localhost:5432/fervor
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o  # opcional
+```
+
+### Banco de dados (PostgreSQL)
+
+O Fervor usa PostgreSQL para usuários e conversas. Opções:
+
+**1. PostgreSQL local (macOS com Homebrew):**
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb fervor
+# Ajuste DATABASE_URL: postgresql://seu_usuario@localhost:5432/fervor
+```
+
+**2. Docker Compose (recomendado):**
+```bash
+docker compose up -d
+# DATABASE_URL=postgresql://fervor:fervor@localhost:5432/fervor
+```
+
+**3. Neon ou Supabase (cloud, gratuito):** crie um projeto e use a connection string fornecida.
+
+Depois de configurar:
+```bash
+npm run check-db   # testa conexão
+npm run db:migrate # aplica migrations
+npm run db:seed    # (opcional) cria usuários demo
 ```
 
 ## Credenciais demo
