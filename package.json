@@ -12,19 +12,21 @@
     "start": "npm run build && node server/index.js",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "ingest": "node scripts/ingest-transcripts.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.0.0",
-    "prisma": "^6.0.0",
-    "bcrypt": "^5.1.1",
-    "jsonwebtoken": "^9.0.2",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
+    "@prisma/client": "^6.0.0",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
     "openai": "^4.52.0",
+    "pdf-parse": "^2.4.5",
+    "prisma": "^6.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.0"

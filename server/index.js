@@ -1,24 +1,27 @@
-import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-dotenv.config({ path: path.join(__dirname, '..', '.env') })
-if (!process.env.OPENAI_API_KEY) {
-  dotenv.config({ path: path.join(process.env.HOME || process.env.USERPROFILE || '', '.openclaw', '.env') })
+const envPath = path.join(__dirname, '..', '.env')
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/)
+    if (m) process.env[m[1].trim()] = m[2].trim()
+  }
 }
 import express from 'express'
 import cors from 'cors'
 import OpenAI from 'openai'
 import { registerAuthRoutes } from './routes/auth.js'
 import { registerConversationRoutes } from './routes/conversations.js'
+import { getRelevantChunks, formatChunksForPrompt } from './knowledge.js'
 
 const app = express()
 app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
-const FERVOR_SYSTEM = `Você é o Fervor — Estrategista Cultural e Semiótico. Sua essência: conectar o abstrato (cultura) ao concreto (ação).
+const FERVOR_SYSTEM = `Você é o Fervor — Agente de Tendências e Estrategista Cultural. Você atende alunos do C Hunting Lab / Made in Future que estão aprendendo pesquisa de tendência, cool hunting e futurologia. Sua essência: conectar o abstrato (cultura) ao concreto (ação) e guiar os alunos na metodologia.
 
 ## REGRA DE OURO (SUPREMA)
 
@@ -79,23 +82,6 @@ Uma etapa por vez + pergunta. Não entregue Etapa 1 e 2 juntas.
 - Explique o porquê quando perguntam sobre método — a conexão semiótica importa mais que a lista.
 - Adapte o tamanho à pergunta. Responda em português. Use **negrito** para destacar.`
 
-function getOpenClawConfig() {
-  const url = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789'
-  let token = process.env.OPENCLAW_GATEWAY_TOKEN
-  if (!token) {
-    const home = process.env.HOME || process.env.USERPROFILE || ''
-    const configPath = path.join(home, '.openclaw', 'openclaw.json')
-    try {
-      const raw = fs.readFileSync(configPath, 'utf8')
-      const cfg = JSON.parse(raw)
-      token = cfg?.gateway?.auth?.token
-    } catch (e) {
-      console.log('OpenClaw config não encontrada em', configPath, e?.message)
-    }
-  }
-  return { url: url.replace(/\/$/, ''), token }
-}
-
 registerAuthRoutes(app)
 registerConversationRoutes(app)
 
@@ -105,56 +91,36 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'messages é obrigatório (array de { role, content })' })
   }
 
+  let systemContent = FERVOR_SYSTEM
+  const apiKey = process.env.OPENAI_API_KEY || req.headers['x-api-key']
+  const lastUserMsg = messages.filter((m) => m.role === 'user').pop()
+  const lastUserText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : ''
+  if (apiKey && lastUserText) {
+    try {
+      const chunks = await getRelevantChunks(lastUserText, apiKey)
+      if (chunks.length > 0) {
+        systemContent = FERVOR_SYSTEM + '\n\n' + formatChunksForPrompt(chunks)
+      }
+    } catch (e) {
+      console.warn('[RAG] Erro ao recuperar chunks:', e.message)
+    }
+  }
+
   const apiMessages = [
-    { role: 'system', content: FERVOR_SYSTEM },
+    { role: 'system', content: systemContent },
     ...messages.map((m) => ({
       role: m.role === 'agent' ? 'assistant' : m.role,
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
     })),
   ]
 
-  const lastUserMsg = messages.filter((m) => m.role === 'user').pop()
   if (lastUserMsg?.content && Array.isArray(lastUserMsg.content)) {
     const lastIdx = apiMessages.length - 1
     apiMessages[lastIdx] = { role: 'user', content: lastUserMsg.content }
   }
 
-  const openclaw = getOpenClawConfig()
-  if (openclaw.token) {
-    try {
-      const resp = await fetch(`${openclaw.url}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${openclaw.token}`,
-          'x-openclaw-agent-id': 'main',
-        },
-        body: JSON.stringify({
-          model: 'openclaw',
-          messages: apiMessages,
-          user: userId ? `fervor-${userId}` : 'fervor',
-          temperature: 0.7,
-        }),
-      })
-      if (!resp.ok) {
-        const errText = await resp.text()
-        throw new Error(`OpenClaw ${resp.status}: ${errText}`)
-      }
-      const data = await resp.json()
-      const content = data.choices?.[0]?.message?.content ?? ''
-      console.log('-> Resposta via OpenClaw')
-      return res.json({ content, backend: 'openclaw' })
-    } catch (err) {
-      console.error('OpenClaw error:', err.message)
-      console.log('Fallback para OpenAI...')
-    }
-  } else {
-    console.log('Requisição: OpenClaw sem token, indo direto para OpenAI')
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY || req.headers['x-api-key']
   if (!apiKey) {
-    return res.status(401).json({ error: 'OPENCLAW_GATEWAY_TOKEN ou OPENAI_API_KEY não configurados. Defina no .env ou envie x-api-key.' })
+    return res.status(401).json({ error: 'OPENAI_API_KEY não configurada. Defina no .env ou envie x-api-key.' })
   }
 
   try {
@@ -175,11 +141,7 @@ app.post('/api/chat', async (req, res) => {
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 
 app.get('/api/backend', (_, res) => {
-  const oc = getOpenClawConfig()
-  res.json({
-    openclaw: oc.token ? { url: oc.url, configured: true } : { configured: false },
-    openai: !!process.env.OPENAI_API_KEY,
-  })
+  res.json({ openai: !!process.env.OPENAI_API_KEY })
 })
 
 const distPath = path.join(__dirname, '..', 'dist')
@@ -189,7 +151,6 @@ if (fs.existsSync(distPath)) {
 }
 
 const PORT = process.env.PORT || 3001
-const openclaw = getOpenClawConfig()
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL não configurada. Configure no .env para usar autenticação e conversas.')
@@ -198,9 +159,5 @@ if (!process.env.DATABASE_URL) {
 
 app.listen(PORT, () => {
   console.log(`Fervor API: http://localhost:${PORT}`)
-  if (openclaw.token) {
-    console.log('-> OpenClaw: ativo (gateway:', openclaw.url, ')')
-  } else {
-    console.log('-> OpenClaw: token não encontrado. Usando OpenAI como fallback.')
-  }
+  console.log('-> OpenAI (GPT)')
 })
