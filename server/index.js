@@ -101,6 +101,9 @@ app.post('/api/chat', async (req, res) => {
       const chunks = await getRelevantChunks(lastUserText, apiKey)
       if (chunks.length > 0) {
         systemContent = FERVOR_SYSTEM + '\n\n' + formatChunksForPrompt(chunks)
+        console.log(`[RAG] ${chunks.length} chunk(s) injetados no contexto`)
+      } else {
+        console.log('[RAG] Nenhum chunk relevante (knowledge.json ausente ou sem match)')
       }
     } catch (e) {
       console.warn('[RAG] Erro ao recuperar chunks:', e.message)

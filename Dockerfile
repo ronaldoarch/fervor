@@ -19,8 +19,13 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY server ./server
+COPY scripts ./scripts
+COPY data ./data
+COPY docker-entrypoint.sh ./
+
+RUN chmod +x docker-entrypoint.sh
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server/index.js"]
+CMD ["./docker-entrypoint.sh"]
