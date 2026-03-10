@@ -73,29 +73,6 @@ function TypingIndicator() {
   )
 }
 
-const MENSAGEM_INICIAL = `Olá! Eu sou o Fervor, seu Estrategista Cultural e Semiótico Especialista.
-
-Meu papel é atuar como um radar: eu analiso manifestações culturais (comportamentos, memes, movimentos, estéticas) através da lente do Materialismo Cultural, classifico-as e, o mais importante, traduzo esses sinais em estratégias acionáveis para o seu projeto ou área de atuação.
-
-Basicamente, eu ajudo você a entender o que é apenas "barulho" e o que é uma mudança real de comportamento que pode impactar o seu mercado.
-
-Para começarmos nossa análise, por favor, me forneça as seguintes informações:
-
-**Manifestações observadas:** (O que você viu? Um comportamento, uma tendência visual, um novo vocabulário, um movimento nas redes sociais?)
-
-**Local da observação:** (Onde isso está acontecendo? TikTok, um bairro específico, um evento, no mercado de luxo?)
-
-**Hipótese inicial:** (O que você acha que isso significa ou por que isso te chamou a atenção?)
-
-Como posso ajudar você a decodificar o presente hoje?`
-
-const INITIAL_MESSAGE: Message = {
-  id: '0',
-  role: 'agent',
-  content: MENSAGEM_INICIAL,
-  timestamp: new Date(),
-}
-
 export default function Agent() {
   const { user, logout, isAdmin } = useAuth()
   const {
@@ -120,8 +97,7 @@ export default function Agent() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const messages =
-    storedMessages.length > 0 ? storedMessages : [INITIAL_MESSAGE]
+  const messages = storedMessages
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
@@ -147,9 +123,7 @@ export default function Agent() {
     }
     setMessages((prev) => {
       const isFirstUserMsg = prev.filter((m) => m.role === 'user').length === 0
-      const base = prev.length === 0 && role === 'user'
-        ? [{ ...INITIAL_MESSAGE, id: '0', timestamp: new Date() }]
-        : prev.map((m) => ({
+      const base = prev.map((m) => ({
             id: m.id,
             role: m.role,
             content: m.content,
@@ -270,7 +244,6 @@ export default function Agent() {
       setContexto({})
       setManifestacoes([])
       setIndiceManifestacao(0)
-      addMessage('agent', MENSAGEM_INICIAL)
     }
   }
 
@@ -280,7 +253,7 @@ export default function Agent() {
     setManifestacoes([])
     setIndiceManifestacao(0)
     setUseAI(null)
-    startNewConversation([{ ...INITIAL_MESSAGE, id: '0', timestamp: new Date() }])
+    startNewConversation([])
   }
 
   const handleSelectConversation = (convId: string) => {
@@ -341,6 +314,11 @@ export default function Agent() {
         <main className="agent-main">
           <div className="chat-container">
             <div className="messages">
+              {messages.length === 0 && !aguardando && (
+                <div className="empty-state">
+                  <p>Comece a conversa — digite sua observação cultural, manifestação ou pergunta abaixo.</p>
+                </div>
+              )}
               {messages.map((msg) => (
                 <div key={msg.id} className={`message message-${msg.role}`}>
                   {msg.role === 'agent' && msg.id === typingMessageId ? (

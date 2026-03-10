@@ -14,11 +14,13 @@ const { PDFParse } = require('pdf-parse')
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TRANSCRIPTS_DIR = path.join(__dirname, '..', 'data', 'transcripts')
 const REPORTS_DIR = path.join(__dirname, '..', 'data', 'reports')
+const CONTEXTO_REGIONAL_FILE = path.join(__dirname, '..', 'data', 'contexto-regional.txt')
 const KNOWLEDGE_FILE = path.join(__dirname, '..', 'data', 'knowledge.json')
 
 const CHUNK_SIZE = 800
 const CHUNK_OVERLAP = 150
-const TOP_K = 5
+const TOP_K = 8
+const SIMILARITY_THRESHOLD = 0.25
 
 let knowledgeCache = null
 
@@ -103,11 +105,20 @@ export async function loadReports() {
   return result
 }
 
-/** Carrega todas as fontes (transcrições + relatórios PDF). */
+/** Carrega contexto regional (cidades, regiões do Brasil) para enriquecer análises. */
+export function loadContextoRegional() {
+  if (!fs.existsSync(CONTEXTO_REGIONAL_FILE)) return []
+  const text = fs.readFileSync(CONTEXTO_REGIONAL_FILE, 'utf8').trim()
+  if (!text) return []
+  return [{ source: 'contexto-regional', text }]
+}
+
+/** Carrega todas as fontes (transcrições + relatórios PDF + contexto regional). */
 export async function loadAllSources() {
   const transcripts = loadTranscripts()
   const reports = await loadReports()
-  return [...transcripts, ...reports]
+  const contextoRegional = loadContextoRegional()
+  return [...transcripts, ...reports, ...contextoRegional]
 }
 
 export async function buildKnowledgeBase(apiKey) {
@@ -179,7 +190,7 @@ export async function getRelevantChunks(query, apiKey, k = TOP_K) {
   }))
   scored.sort((a, b) => b.score - a.score)
 
-  const top = scored.slice(0, k).filter((c) => c.score > 0.3)
+  const top = scored.slice(0, k).filter((c) => c.score > SIMILARITY_THRESHOLD)
   return top.map(({ text, source }) => ({ text, source }))
 }
 

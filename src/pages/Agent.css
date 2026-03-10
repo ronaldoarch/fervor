@@ -181,6 +181,17 @@
   min-height: 200px;
 }
 
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
 .messages {
   flex: 1;
   min-height: 150px;
