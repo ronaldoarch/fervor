@@ -2,7 +2,7 @@ import { getToken } from './authApi'
 
 const API_URL = '/api/chat'
 
-export async function sendToFervor(
+export async function sendToFervo(
   messages: { role: 'user' | 'agent'; content: string }[],
   apiKey?: string,
   userId?: string

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as conversationApi from '../services/conversationApi'
+import { FERVO_WELCOME } from '../constants/fervoCopy'
 
 export interface Message {
   id: string
@@ -37,10 +38,12 @@ export function useConversations(userId: string | undefined) {
       const list = await conversationApi.getConversations()
       setConversations(list)
       if (list.length === 0) {
-        const newConv = await conversationApi.createConversation('Nova análise', [])
+        const newConv = await conversationApi.createConversation('Nova análise', [
+          { role: 'agent', content: FERVO_WELCOME },
+        ])
         setConversations([newConv])
         setActiveId(newConv.id)
-        setMessages([])
+        setMessages((newConv.messages || []).map(toMessage))
       } else if (!activeId) {
         const latest = list[0]
         setActiveId(latest.id)
@@ -109,8 +112,11 @@ export function useConversations(userId: string | undefined) {
     async (initialMessages?: Message[]) => {
       if (!userId) return null
       try {
-        const stored = initialMessages?.map((m) => ({ role: m.role, content: m.content }))
-        const newConv = await conversationApi.createConversation('Nova análise', stored || [])
+        const stored =
+          initialMessages != null && initialMessages.length > 0
+            ? initialMessages.map((m) => ({ role: m.role, content: m.content }))
+            : [{ role: 'agent' as const, content: FERVO_WELCOME }]
+        const newConv = await conversationApi.createConversation('Nova análise', stored)
         setConversations((prev) => [newConv, ...prev])
         setActiveId(newConv.id)
         setMessages((newConv.messages || []).map(toMessage))

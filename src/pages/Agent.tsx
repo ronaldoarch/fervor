@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConversations } from '../hooks/useConversations'
-import { sendToFervor } from '../services/chatApi'
+import { sendToFervo } from '../services/chatApi'
+import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
   processarEtapa1,
   processarEtapa2,
@@ -156,7 +157,8 @@ export default function Agent() {
 
     try {
       if (useAI !== false) {
-        const content = await sendToFervor(apiMessages, undefined, user?.id)
+        const raw = await sendToFervo(apiMessages, undefined, user?.id)
+        const content = sanitizeAgentText(raw)
         setUseAI(true)
         const msg = addMessageAndReturn('agent', content)
         setTypingMessageId(msg.id)
@@ -187,7 +189,10 @@ export default function Agent() {
       const manifestacoesResult = processarEtapa1(ctx as ContextoUsuario)
       setManifestacoes(manifestacoesResult)
 
-      let analiseEtapa1 = '## ETAPA 1: ANÁLISE E CATEGORIZAÇÃO (O Radar Cultural)\n\n'
+      let analiseEtapa1 =
+        'Ótimo, vamos começar com a análise e categorização dessa manifestação cultural.\n\n' +
+        'ETAPA 1\n\n' +
+        'O Radar Cultural: Análise e Categorização\n\n'
       for (const m of manifestacoesResult) {
         analiseEtapa1 += `**${m.nome}**\n`
         analiseEtapa1 += `- **Categoria:** ${m.categoria}\n`
@@ -197,46 +202,86 @@ export default function Agent() {
 
       const m0 = manifestacoesResult[0]
       const conexao = processarEtapa2(m0)
-      let analiseEtapa2 = '\n---\n\n## ETAPA 2: CONEXÃO COM EXPECTATIVAS (A Tensão Psicológica)\n\n'
+      let analiseEtapa2 =
+        '\nETAPA 2\n\n' +
+        'A tensão psicológica: Conexão com Expectativas\n\n'
       analiseEtapa2 += `- Esse sinal **responde a** ${conexao.respondeA}\n`
       analiseEtapa2 += `- Esse sinal **alimenta o desejo por** ${conexao.alimentaDesejo}\n`
       analiseEtapa2 += `- Esse sinal **tenta neutralizar o medo de** ${conexao.neutralizaMedo}\n`
       analiseEtapa2 += `- Esse sinal **é reflexo de** ${conexao.reflexoDe}\n`
       analiseEtapa2 += `- Esse sinal **vai de encontro a** ${conexao.encontraEm}\n\n`
-      analiseEtapa2 += '**PAUSA OBRIGATÓRIA:** A análise faz sentido para você? Responda sim ou não para prosseguirmos à Etapa 3.'
+      analiseEtapa2 +=
+        'Essa leitura ressoa com o que você observou, ou tem outro ângulo que quer explorar?'
 
       setEtapa('etapa2')
-      addMessage('agent', analiseEtapa1 + analiseEtapa2, { manifestacoes: manifestacoesResult })
+      addMessage('agent', sanitizeAgentText(analiseEtapa1 + analiseEtapa2), {
+        manifestacoes: manifestacoesResult,
+      })
     } else if (etapa === 'etapa2') {
-      const confirmou = /sim|s|yes|y/i.test(userMsg)
-      if (confirmou) {
-        const resp = 'Ótimo! A análise faz sentido.\n\n## ETAPA 3: INTERAÇÃO E CONTEXTUALIZAÇÃO (O Pivô)\n\nAgora preciso de mais duas informações:\n\n**Área de atuação:** (Design, Moda, Branding, etc.)\n\n**Objetivo do projeto específico:**'
+      const trimmed = userMsg.trim()
+      const recua = /^(não|nao)\b/i.test(trimmed) && trimmed.length < 48
+      const seguir =
+        !recua &&
+        (/^(sim|s|ok|yes|y)\b/i.test(trimmed) ||
+          /\b(vamos|avanç|avançar|seguir|bora|perfeito|pode ser|beleza)\b/i.test(trimmed.toLowerCase()))
+
+      if (seguir) {
+        const resp =
+          'Ótimo!\n\n' +
+          'ETAPA 3\n\n' +
+          'O pivô: Interação e Contextualização\n\n' +
+          'Agora me ajuda a levar essa análise pra prática e me conta:\n\n' +
+          'Em que área você atua? (o Fervô já sugere algumas áreas)\n\n' +
+          'Onde você quer aplicar esses insights? (o Fervô já sugere alguns insights)\n\n' +
+          'Qual o objetivo central desse projeto? (o Fervô já sugere algumas ideias)\n\n' +
+          'Algumas ideias: áreas como Design, Moda, Branding ou Conteúdo; aplicar em produto, campanha, marca ou experiência; objetivo como lançamento, reposicionamento ou cultura interna.'
         setEtapa('etapa3')
         addMessage('agent', resp)
+      } else if (recua) {
+        addMessage(
+          'agent',
+          'Sem problema. O que não ressoou com você, ou que ângulo você gostaria de aprofundar antes da gente seguir?'
+        )
       } else {
-        addMessage('agent', 'Entendo. Podemos ajustar a análise. O que não fez sentido para você? Descreva e podemos refinar antes de prosseguir.')
+        addMessage(
+          'agent',
+          'Anotado. Quando quiser ir para a etapa prática (pivô), responda **sim** ou diga que podemos seguir.'
+        )
       }
     } else if (etapa === 'etapa3') {
-      const partes = userMsg.split(/\n\n|\n/)
+      const partes = userMsg.split(/\n\n+/).map((s) => s.trim()).filter(Boolean)
       const area = partes[0] || userMsg
-      const objetivo = partes[1] || userMsg
+      const onde = partes.length >= 3 ? partes[1] : ''
+      const objetivo = partes.length >= 3 ? partes[2] : partes[1] || ''
+      const resumoObjetivo =
+        [onde && `Aplicação: ${onde}`, objetivo && `Objetivo: ${objetivo}`].filter(Boolean).join(' — ') ||
+        userMsg
 
-      setContexto((c) => ({ ...c, areaAtuacao: area, objetivoProjeto: objetivo }))
+      setContexto((c) => ({
+        ...c,
+        areaAtuacao: area,
+        ondeAplicarInsights: onde || undefined,
+        objetivoProjeto: objetivo || resumoObjetivo,
+      }))
 
       const m = manifestacoes[indiceManifestacao] || manifestacoes[0]
-      const traducao = processarEtapa4(m, area, objetivo)
+      const traducao = processarEtapa4(m, area, resumoObjetivo)
       const perguntas = gerarPerguntasProvocativas(area)
 
-      let resp = '## ETAPA 4: TRADUÇÃO ESTRATÉGICA ("SO WHAT?")\n\n'
-      resp += `**Filtro de Relevância:** ${traducao.filtroRelevancia.toUpperCase()}\n`
+      let resp =
+        'ETAPA 4\n\n' +
+        '"So what?": Tradução Estratégica\n\n'
+      const filtroLabel = traducao.filtroRelevancia === 'aplicar' ? 'APLICAR' : 'DESCARTAR'
+      resp += `**Filtro de Relevância:** ${filtroLabel}\n`
       resp += `${traducao.motivoFiltro}\n\n`
-      resp += `**So What?** ${traducao.soWhat}\n\n`
+      resp += `**So what?** ${traducao.soWhat}\n\n`
       resp += `**Adaptação:** ${traducao.adaptacao}\n\n`
-      resp += '---\n\n**Perguntas provocativas:**\n\n'
+      resp += 'Provocação: Agora é a sua vez\n\n'
+      resp += 'Do Fervô pra você:\n\n'
       for (const p of perguntas) {
         resp += `• ${p}\n`
       }
-      resp += '\n\nPosso iniciar uma nova análise? Basta me enviar suas novas manifestações.'
+      resp += '\nQuer uma nova análise? É só mandar novas observações aqui.'
       setEtapa('finalizado')
       addMessage('agent', resp)
     } else if (etapa === 'finalizado') {
@@ -253,7 +298,7 @@ export default function Agent() {
     setManifestacoes([])
     setIndiceManifestacao(0)
     setUseAI(null)
-    startNewConversation([])
+    startNewConversation()
   }
 
   const handleSelectConversation = (convId: string) => {
@@ -270,7 +315,7 @@ export default function Agent() {
       <header className="agent-header">
         <div className="header-left">
           <button className="sidebar-toggle" onClick={() => setSidebarOpen((s) => !s)} aria-label="Abrir conversas">☰</button>
-          <h1>Fervor</h1>
+          <h1>Fervô</h1>
           <span className="agent-badge">Agente de Tendência</span>
         </div>
         <nav className="header-nav">
@@ -316,19 +361,22 @@ export default function Agent() {
             <div className="messages">
               {messages.length === 0 && !aguardando && (
                 <div className="empty-state">
-                  <p>Comece a conversa — digite sua observação cultural, manifestação ou pergunta abaixo.</p>
+                  <p>Carregando a conversa…</p>
                 </div>
               )}
-              {messages.map((msg) => (
+              {messages.map((msg) => {
+                const display =
+                  msg.role === 'agent' ? sanitizeAgentText(msg.content) : msg.content
+                return (
                 <div key={msg.id} className={`message message-${msg.role}`}>
                   {msg.role === 'agent' && msg.id === typingMessageId ? (
                     <TypewriterContent
-                      content={msg.content}
+                      content={display}
                       onComplete={() => setTypingMessageId(null)}
                     />
                   ) : (
                     <div className="message-content">
-                      {msg.content.split('\n').map((line, i) => (
+                      {display.split('\n').map((line, i) => (
                         <p key={i}>
                           {line ? line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
                             part.startsWith('**') && part.endsWith('**')
@@ -340,7 +388,7 @@ export default function Agent() {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
               {aguardando && <TypingIndicator />}
               <div ref={messagesEndRef} />
             </div>

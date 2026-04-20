@@ -8,7 +8,7 @@ export default function Admin() {
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <Link to="/" className="back-link">← Voltar ao Fervor</Link>
+        <Link to="/" className="back-link">← Voltar ao Fervô</Link>
         <div className="admin-user">
           <span>{user?.name}</span>
           <button onClick={logout}>Sair</button>
@@ -17,7 +17,7 @@ export default function Admin() {
 
       <main className="admin-main">
         <h1>Painel Administrativo</h1>
-        <p className="admin-subtitle">Bem-vindo ao painel de administração do Fervor.</p>
+        <p className="admin-subtitle">Bem-vindo ao painel de administração do Fervô.</p>
 
         <div className="admin-cards">
           <section className="admin-card">

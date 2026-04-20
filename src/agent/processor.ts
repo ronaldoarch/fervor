@@ -122,20 +122,20 @@ export function processarEtapa4(
 export function gerarPerguntasProvocativas(area: string): string[] {
   const perguntas: Record<string, string[]> = {
     Design: [
-      'How might we traduzir essa tensão em uma experiência física ou digital memorável?',
-      'How might we usar materiais e formas para materializar esse desejo latente?',
+      'Como traduzir essa tensão numa experiência física ou digital memorável?',
+      'Que materiais e formas materializam melhor esse desejo latente?',
     ],
     Moda: [
-      'How might we vestir essa tensão de forma que o corpo se torne um manifesto?',
-      'How might we criar peças que sejam tanto tendência quanto statement?',
+      'E se o corpo virasse manifesto dessa tensão — o que mudaria nas coleções?',
+      'Como vestir tendência e statement sem diluir a mensagem?',
     ],
     Branding: [
-      'How might we posicionar a marca na encruzilhada entre essa nostalgia e o futuro?',
-      'How might we criar uma narrativa que ressoe com quem sente essa tensão?',
+      'E se a marca ocupasse o espaço entre nostalgia e futuro de forma inédita?',
+      'Que narrativa ressoa com quem sente essa tensão no dia a dia?',
     ],
     default: [
-      'How might we transformar essa tensão em uma proposta de valor clara?',
-      'How might we conectar essa manifestação ao desejo central do seu público?',
+      'Como transformar essa tensão numa proposta de valor clara?',
+      'Que ponte você criaria entre essa manifestação e o desejo central do público?',
     ],
   }
   return perguntas[area] || perguntas.default

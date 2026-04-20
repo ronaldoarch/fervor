@@ -31,6 +31,8 @@ export interface ContextoUsuario {
   localObservacao: string
   hipoteseInicial: string
   areaAtuacao?: string
+  /** Onde aplicar os insights (campanha, marca, produto…). */
+  ondeAplicarInsights?: string
   objetivoProjeto?: string
 }
 

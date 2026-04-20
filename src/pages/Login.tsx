@@ -51,7 +51,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <h1>Fervor</h1>
+          <h1>Fervô</h1>
           <p>Estrategista Cultural e Semiótico</p>
         </div>
         <form onSubmit={handleSubmit} className="login-form">

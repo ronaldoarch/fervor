@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Fervor - Agente de Tendência',
-        short_name: 'Fervor',
+        name: 'Fervô - Agente de Tendência',
+        short_name: 'Fervô',
         description: 'Estrategista Cultural e Semiótico Especialista - Seu radar de tendências',
         theme_color: '#050B07',
         background_color: '#050B07',

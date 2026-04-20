@@ -73,7 +73,7 @@ export default function InstallPrompt() {
         <div className="install-prompt__content">
           <span className="install-prompt__icon">📱</span>
           <div>
-            <strong>Instale o Fervor</strong>
+            <strong>Instale o Fervô</strong>
             <p>Use como app, mais rápido e sem abrir o navegador.</p>
           </div>
         </div>
