@@ -2,11 +2,18 @@ import { getToken } from './authApi'
 
 const API_URL = '/api/chat'
 
+export interface SendFervoResult {
+  content: string
+  /** Resposta já gravada no servidor (como no ChatGPT); ao voltar ao app, recarregue a conversa. */
+  persisted: boolean
+}
+
 export async function sendToFervo(
   messages: { role: 'user' | 'agent'; content: string }[],
   apiKey?: string,
-  userId?: string
-): Promise<string> {
+  userId?: string,
+  conversationId?: string | null
+): Promise<SendFervoResult> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
@@ -14,10 +21,19 @@ export async function sendToFervo(
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
 
+  const bodyStr = JSON.stringify({
+    messages,
+    userId: userId || undefined,
+    conversationId: conversationId || undefined,
+  })
+  /** Limite ~64KB do Chrome; keepalive ajuda a concluir o POST se a aba fechar durante a análise. */
+  const keepalive = bodyStr.length < 58_000
+
   const res = await fetch(API_URL, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ messages, userId: userId || undefined }),
+    body: bodyStr,
+    keepalive,
   })
 
   if (!res.ok) {
@@ -26,5 +42,8 @@ export async function sendToFervo(
   }
 
   const data = await res.json()
-  return data.content ?? ''
+  return {
+    content: data.content ?? '',
+    persisted: Boolean(data.persisted),
+  }
 }

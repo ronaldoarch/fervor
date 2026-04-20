@@ -14,6 +14,7 @@ import express from 'express'
 import cors from 'cors'
 import OpenAI from 'openai'
 import { registerAuthRoutes } from './routes/auth.js'
+import { verifyToken } from './auth.js'
 import { registerConversationRoutes } from './routes/conversations.js'
 import { getRelevantChunks, formatChunksForPrompt } from './knowledge.js'
 import { prisma } from './db.js'
@@ -66,22 +67,38 @@ Conecte os sinais às tensões humanas usando estes conectivos:
 4) Fim da mesma mensagem com a pergunta exata:
 "Essa leitura ressoa com o que você observou, ou tem outro ângulo que quer explorar?"
 
+5) Logo abaixo, um convite **opcional** e curto (quem preferir leve ignora):
+Explique que, se quiser mais densidade **nesta mesma etapa** (mais tensões, contrastes e camadas de significado), pode escrever **aprofundar** (ou equivalente: "mais fundo", "versão mais densa", "mais camadas"). Deixe claro que é opcional: a leitura até o item 4 já está completa para seguir.
+
 Não escreva "PAUSA OBRIGATÓRIA" nem peça apenas sim/não.
 
+OPCIONAL — PEDIDO DE APROFUNDAMENTO NA ETAPA 2
+Se o usuário pedir aprofundamento explícito (ex.: "aprofundar", "mais fundo", "mais camadas", "versão estendida", "mais denso"):
+- NÃO avance para a Etapa 3 nessa mensagem.
+- Entregue um bloco com título claro, por exemplo: "Aprofundamento (opcional) — tensões e camadas" ou "Leitura complementar".
+- Amplie com tensões secundárias, contradições produtivas ("por um lado / por outro"), pressões entre Residual, Dominante e Emergente no caso concreto, e implicações de inclusão/exclusão simbólica — sem repetir parágrafo a parágrafo o que já foi dito na Etapa 2 inicial.
+- Feche de novo com a pergunta de ressonância e lembre que **sim** (ou equivalente) leva ao pivô quando estiver pronto.
+
+Se o usuário pedir aprofundamento de novo depois desse bloco: reconheça que já expandiu; não infle sem limite; convide a seguir ao pivô com **sim** ou a refinar um último ângulo.
+
 APÓS A RESPOSTA À PERGUNTA DE RESSONÂNCIA
-Se a pessoa quiser explorar outro ângulo, converse e refine; quando for seguir para aplicação prática, apresente a Etapa 3 com estes títulos e texto:
+Se a pessoa quiser explorar outro ângulo, converse e refine; quando for seguir para aplicação prática, apresente a Etapa 3 seguindo OBRIGATORIAMENTE este modelo (as sugestões devem vir logo abaixo de cada pergunta, não agrupadas só no final):
 
 ETAPA 3
 O pivô: Interação e Contextualização
 
-"Agora me ajuda a levar essa análise pra prática e me conta:"
+Agora me ajuda a levar essa análise pra prática e me conta:
 
-Pergunte exatamente (mantendo os parênteses):
-"Em que área você atua? (o Fervô já sugere algumas áreas)"
-"Onde você quer aplicar esses insights? (o Fervô já sugere alguns insights)"
-"Qual o objetivo central desse projeto? (o Fervô já sugere algumas ideias)"
+Em que área você atua? (o Fervô já sugere algumas áreas)
+[Logo em seguida, uma ou duas linhas com exemplos concretos de áreas — ex.: Design, Moda, Branding, Conteúdo, UX/UI, arquitetura de marca, pesquisa de tendência, comunicação, produto, embalagem, varejo, RH/cultura.]
 
-Em seguida ofereça exemplos curtos: áreas como Design, Moda, Branding, Conteúdo; aplicação em produto, campanha, marca, experiência; objetivos como lançamento, reposicionamento, cultura interna, etc.
+Onde você quer aplicar esses insights? (o Fervô já sugere alguns insights)
+[Logo em seguida, exemplos de aplicação — ex.: campanha 360 ou digital, redes e criadores, loja ou evento, pitch, naming/conceito, cultura interna, material de venda, lançamento de produto/coleção.]
+
+Qual o objetivo central desse projeto? (o Fervô já sugere algumas ideias)
+[Logo em seguida, exemplos de objetivo — ex.: lançamento/relançamento, reposicionamento, validação de conceito, mapa de oportunidades, briefing, linha de produto, tom de voz, sprint criativo.]
+
+Não envie só as três perguntas com os parênteses sem as linhas de sugestão abaixo de cada uma.
 
 ETAPA 4 (somente depois das três respostas da Etapa 3)
 Títulos:
@@ -124,9 +141,16 @@ function buildConversationContext(messages) {
     etapa = 'Etapa 4 concluída (tradução e provocação); usuário pode iniciar nova análise'
   } else if (agent.includes('etapa 3') || agent.includes('pivô')) {
     etapa = 'Etapa 3 (pivô) — aguardando área, onde aplicar insights e objetivo do projeto'
+  } else if (
+    agent.includes('aprofundamento') ||
+    agent.includes('leitura complementar') ||
+    (agent.includes('opcional') && agent.includes('camadas'))
+  ) {
+    etapa =
+      'Etapa 2 após pedido de aprofundamento; aguardar ressonância ou confirmação (**sim**) para Etapa 3 (pivô). Não repetir outro bloco gigante de aprofundamento se o usuário pedir de novo.'
   } else if (agent.includes('etapa 1') || agent.includes('radar cultural')) {
     etapa =
-      'Etapas 1 e 2 já entregues na última mensagem; aguardando resposta à pergunta de ressonância ou refinamento antes do pivô'
+      'Etapas 1 e 2 já entregues na última mensagem (com convite opcional de aprofundar); aguardar ressonância, pedido de aprofundamento, ou refinamento antes do pivô'
   }
   return `\n## CONTEXTO DA CONVERSA\nVocê está em: ${etapa}. Use isso para manter coerência e não repetir etapas já feitas.`
 }
@@ -134,8 +158,47 @@ function buildConversationContext(messages) {
 registerAuthRoutes(app)
 registerConversationRoutes(app)
 
+function getUserIdFromBearer(req) {
+  const auth = req.headers?.authorization
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return null
+  const decoded = verifyToken(token)
+  return decoded?.userId ?? null
+}
+
+/** Grava no Postgres o histórico enviado + resposta do assistente (igual ao fluxo do ChatGPT no servidor). */
+async function persistAssistantAfterChat(userId, conversationId, clientMessages, assistantContent) {
+  const conv = await prisma.conversation.findFirst({
+    where: { id: String(conversationId), userId },
+    select: { id: true },
+  })
+  if (!conv) return false
+
+  const rows = [...clientMessages, { role: 'agent', content: assistantContent }].map((m) => {
+    const content =
+      typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '')
+    const role =
+      m.role === 'agent' || m.role === 'assistant'
+        ? 'assistant'
+        : m.role === 'user'
+          ? 'user'
+          : 'assistant'
+    return { conversationId: conv.id, role, content }
+  })
+
+  await prisma.$transaction(async (tx) => {
+    await tx.message.deleteMany({ where: { conversationId: conv.id } })
+    await tx.message.createMany({ data: rows })
+    await tx.conversation.update({
+      where: { id: conv.id },
+      data: { updatedAt: new Date() },
+    })
+  })
+  return true
+}
+
 app.post('/api/chat', async (req, res) => {
-  const { messages, userId } = req.body
+  const { messages, userId, conversationId } = req.body
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages é obrigatório (array de { role, content })' })
   }
@@ -184,7 +247,21 @@ app.post('/api/chat', async (req, res) => {
     })
     const raw = completion.choices[0]?.message?.content ?? ''
     const content = stripAgentMarkdownArtifacts(raw)
-    res.json({ content, backend: 'openai' })
+
+    const uid = getUserIdFromBearer(req)
+    let persisted = false
+    if (uid && conversationId) {
+      try {
+        persisted = await persistAssistantAfterChat(uid, conversationId, messages, content)
+        if (persisted) {
+          console.log(`[chat] conversa ${conversationId} atualizada no banco (resposta do assistente)`)
+        }
+      } catch (e) {
+        console.warn('[chat] persistência no banco falhou:', e.message)
+      }
+    }
+
+    res.json({ content, backend: 'openai', persisted })
   } catch (err) {
     console.error('OpenAI error:', err.message)
     res.status(500).json({ error: err.message || 'Erro ao chamar OpenAI' })

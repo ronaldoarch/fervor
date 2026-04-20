@@ -1,14 +1,25 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useConversations } from '../hooks/useConversations'
+import { useConversationsContext } from '../contexts/ConversationsContext'
+import * as conversationApi from '../services/conversationApi'
 import { sendToFervo } from '../services/chatApi'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
+import {
+  getFervoNotificationPermission,
+  notifyFervoReplyReady,
+  notificationsSupported,
+  requestFervoNotificationPermission,
+  requestPersistentStorage,
+  setFervoChatSurfaceMounted,
+} from '../utils/responseNotification'
+import { FERVO_ETAPA_3_BODY } from '../constants/fervoCopy'
 import {
   processarEtapa1,
   processarEtapa2,
   processarEtapa4,
   gerarPerguntasProvocativas,
+  gerarAprofundamentoEtapa2,
 } from '../agent/processor'
 import type { ContextoUsuario, Etapa, Manifestacao } from '../agent/types'
 import './Agent.css'
@@ -36,16 +47,38 @@ function TypewriterContent({ content, onComplete }: { content: string; onComplet
     let i = 0
     const step = 2
     const delay = 25
-    const timer = setInterval(() => {
+    let timer: ReturnType<typeof setInterval> | null = null
+    let completed = false
+
+    const finish = () => {
+      if (completed) return
+      completed = true
+      if (timer != null) {
+        clearInterval(timer)
+        timer = null
+      }
+      i = content.length
+      setDisplay(content)
+      setDone(true)
+      onCompleteRef.current()
+    }
+
+    const onVisibility = () => {
+      if (document.hidden) finish()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    timer = setInterval(() => {
+      if (document.hidden) return
       i = Math.min(i + step, content.length)
       setDisplay(content.slice(0, i))
-      if (i >= content.length) {
-        clearInterval(timer)
-        setDone(true)
-        onCompleteRef.current()
-      }
+      if (i >= content.length) finish()
     }, delay)
-    return () => clearInterval(timer)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      if (timer != null) clearInterval(timer)
+    }
   }, [content])
 
   return (
@@ -84,7 +117,18 @@ export default function Agent() {
     saveMessages,
     startNewConversation,
     loadConversation,
-  } = useConversations(user?.id)
+    refresh,
+  } = useConversationsContext()
+
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    setFervoChatSurfaceMounted(true)
+    return () => {
+      mountedRef.current = false
+      setFervoChatSurfaceMounted(false)
+    }
+  }, [])
 
   const [input, setInput] = useState('')
   const [etapa, setEtapa] = useState<Etapa>('inicio')
@@ -95,8 +139,53 @@ export default function Agent() {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [useAI, setUseAI] = useState<boolean | null>(null) // null = ainda não testou
+  const [notifyPerm, setNotifyPerm] = useState(() => getFervoNotificationPermission())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  /** Quantas vezes o usuário pediu aprofundamento na Etapa 2 (heurística). */
+  const profundidadeEtapa2Ref = useRef(0)
+
+  const deliverAgentMessage = (content: string, analise?: unknown) => {
+    addMessage('agent', content, analise)
+    void notifyFervoReplyReady(content).catch(() => {})
+  }
+
+  const handleEnableNotifications = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    const p = await requestFervoNotificationPermission()
+    setNotifyPerm(p)
+  }
+
+  useEffect(() => {
+    const sync = () => setNotifyPerm(getFervoNotificationPermission())
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [])
+
+  useEffect(() => {
+    void requestPersistentStorage()
+  }, [])
+
+  /** Se o servidor gravou a resposta enquanto a aba estava em segundo plano, ao voltar puxa do banco (padrão tipo ChatGPT). */
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState !== 'visible' || !activeId) return
+      void conversationApi.getConversation(activeId).then((full) => {
+        const remote = full.messages || []
+        setMessages((cur) => {
+          if (remote.length <= cur.length) return cur
+          return remote.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.timestamp),
+          }))
+        })
+      })
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [activeId, setMessages])
 
   const messages = storedMessages
 
@@ -147,21 +236,67 @@ export default function Agent() {
 
     const userMsg = input.trim()
     setInput('')
-    addMessage('user', userMsg)
     setAguardando(true)
 
-    const apiMessages = [
-      ...messages.map((m) => ({ role: m.role as 'user' | 'agent', content: m.content })),
-      { role: 'user' as const, content: userMsg },
-    ]
+    const snapshot = messages
+    const isFirstUserMsg = snapshot.filter((m) => m.role === 'user').length === 0
+    const newUserMsg: Message = {
+      id:
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      role: 'user',
+      content: userMsg,
+      timestamp: new Date(),
+    }
+    const baseMsgs = snapshot.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+      analise: (m as Message & { analise?: unknown }).analise,
+    }))
+    const nextWithUser: Message[] = [...baseMsgs, newUserMsg]
+    const chatTitle =
+      isFirstUserMsg ? userMsg.slice(0, 40) + (userMsg.length > 40 ? '...' : '') : undefined
+
+    setMessages(nextWithUser)
+    await saveMessages(nextWithUser, chatTitle)
+
+    const apiMessages = nextWithUser.map((m) => ({
+      role: m.role as 'user' | 'agent',
+      content: m.content,
+    }))
 
     try {
       if (useAI !== false) {
-        const raw = await sendToFervo(apiMessages, undefined, user?.id)
-        const content = sanitizeAgentText(raw)
+        const { content: rawContent, persisted } = await sendToFervo(
+          apiMessages,
+          undefined,
+          user?.id,
+          activeId
+        )
+        const content = sanitizeAgentText(rawContent)
         setUseAI(true)
-        const msg = addMessageAndReturn('agent', content)
-        setTypingMessageId(msg.id)
+        if (persisted && activeId) {
+          const full = await conversationApi.getConversation(activeId)
+          setMessages(
+            (full.messages || []).map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(m.timestamp),
+            }))
+          )
+          const msgs = full.messages || []
+          const lastAgent = [...msgs].reverse().find((m) => m.role === 'agent')
+          if (lastAgent) setTypingMessageId(lastAgent.id)
+          await refresh()
+        } else {
+          const msg = addMessageAndReturn('agent', content)
+          setTypingMessageId(msg.id)
+        }
+        await notifyFervoReplyReady(content)
       } else {
         throw new Error('Usando heurística')
       }
@@ -169,13 +304,16 @@ export default function Agent() {
       console.warn('API falhou, usando heurística:', err)
       await runHeuristic(userMsg)
     } finally {
-      setAguardando(false)
-      inputRef.current?.focus()
+      if (mountedRef.current) {
+        setAguardando(false)
+        inputRef.current?.focus()
+      }
     }
   }
 
   const runHeuristic = async (userMsg: string) => {
     if (etapa === 'inicio') {
+      profundidadeEtapa2Ref.current = 0
       const manifestMatch = userMsg.match(/(?:manifesta[çc][õo]es?\s*[:\-]?\s*)(.+?)(?=local|$)/is)
       const localMatch = userMsg.match(/(?:local\s*(?:da\s*)?observa[çc][ãa]o?\s*[:\-]?\s*)(.+?)(?=hip[óo]tese|$)/is)
       const hipMatch = userMsg.match(/(?:hip[óo]tese\s*(?:inicial)?\s*[:\-]?\s*)(.+?)$/is)
@@ -211,14 +349,32 @@ export default function Agent() {
       analiseEtapa2 += `- Esse sinal **é reflexo de** ${conexao.reflexoDe}\n`
       analiseEtapa2 += `- Esse sinal **vai de encontro a** ${conexao.encontraEm}\n\n`
       analiseEtapa2 +=
-        'Essa leitura ressoa com o que você observou, ou tem outro ângulo que quer explorar?'
+        'Essa leitura ressoa com o que você observou, ou tem outro ângulo que quer explorar?\n\n' +
+        'Se quiser uma leitura **mais aprofundada** nesta mesma etapa (mais tensões, contrastes e camadas de significado), responda com **aprofundar**. É opcional: o que veio até aqui já fecha bem a Etapa 2 para quem prefere seguir no ritmo direto.'
 
       setEtapa('etapa2')
-      addMessage('agent', sanitizeAgentText(analiseEtapa1 + analiseEtapa2), {
+      deliverAgentMessage(sanitizeAgentText(analiseEtapa1 + analiseEtapa2), {
         manifestacoes: manifestacoesResult,
       })
     } else if (etapa === 'etapa2') {
       const trimmed = userMsg.trim()
+      const negouAprofundar = /\b(n[aã]o quero aprofund|sem aprofund|n[aã]o precisa aprofund)\b/i.test(
+        trimmed
+      )
+      const querAprofundar =
+        !negouAprofundar &&
+        /\b(aprofundar|aprofundamento|mais fundo|mais denso|vers[aã]o estendida|leitura mais (rica|profunda)|mais camadas|mais tens[oõ]es)\b/i.test(
+          trimmed
+        )
+
+      if (querAprofundar) {
+        const m = manifestacoes[indiceManifestacao] || manifestacoes[0]
+        const texto = gerarAprofundamentoEtapa2(m, contexto, profundidadeEtapa2Ref.current)
+        profundidadeEtapa2Ref.current += 1
+        deliverAgentMessage(texto)
+        return
+      }
+
       const recua = /^(não|nao)\b/i.test(trimmed) && trimmed.length < 48
       const seguir =
         !recua &&
@@ -226,25 +382,15 @@ export default function Agent() {
           /\b(vamos|avanç|avançar|seguir|bora|perfeito|pode ser|beleza)\b/i.test(trimmed.toLowerCase()))
 
       if (seguir) {
-        const resp =
-          'Ótimo!\n\n' +
-          'ETAPA 3\n\n' +
-          'O pivô: Interação e Contextualização\n\n' +
-          'Agora me ajuda a levar essa análise pra prática e me conta:\n\n' +
-          'Em que área você atua? (o Fervô já sugere algumas áreas)\n\n' +
-          'Onde você quer aplicar esses insights? (o Fervô já sugere alguns insights)\n\n' +
-          'Qual o objetivo central desse projeto? (o Fervô já sugere algumas ideias)\n\n' +
-          'Algumas ideias: áreas como Design, Moda, Branding ou Conteúdo; aplicar em produto, campanha, marca ou experiência; objetivo como lançamento, reposicionamento ou cultura interna.'
+        const resp = `Ótimo!\n\n${FERVO_ETAPA_3_BODY}`
         setEtapa('etapa3')
-        addMessage('agent', resp)
+        deliverAgentMessage(resp)
       } else if (recua) {
-        addMessage(
-          'agent',
+        deliverAgentMessage(
           'Sem problema. O que não ressoou com você, ou que ângulo você gostaria de aprofundar antes da gente seguir?'
         )
       } else {
-        addMessage(
-          'agent',
+        deliverAgentMessage(
           'Anotado. Quando quiser ir para a etapa prática (pivô), responda **sim** ou diga que podemos seguir.'
         )
       }
@@ -283,8 +429,9 @@ export default function Agent() {
       }
       resp += '\nQuer uma nova análise? É só mandar novas observações aqui.'
       setEtapa('finalizado')
-      addMessage('agent', resp)
+      deliverAgentMessage(resp)
     } else if (etapa === 'finalizado') {
+      profundidadeEtapa2Ref.current = 0
       setEtapa('inicio')
       setContexto({})
       setManifestacoes([])
@@ -293,6 +440,7 @@ export default function Agent() {
   }
 
   const handleNewChat = () => {
+    profundidadeEtapa2Ref.current = 0
     setEtapa('inicio')
     setContexto({})
     setManifestacoes([])
@@ -303,6 +451,7 @@ export default function Agent() {
 
   const handleSelectConversation = (convId: string) => {
     if (convId === activeId) return
+    profundidadeEtapa2Ref.current = 0
     setEtapa('inicio')
     setContexto({})
     setManifestacoes([])
@@ -319,6 +468,26 @@ export default function Agent() {
           <span className="agent-badge">Agente de Tendência</span>
         </div>
         <nav className="header-nav">
+          {notificationsSupported() && notifyPerm === 'default' && (
+            <button
+              type="button"
+              className="btn-notify"
+              onClick={handleEnableNotifications}
+              title="Aviso do sistema quando o Fervô terminar (outro app ou aba em segundo plano)"
+            >
+              Ativar avisos
+            </button>
+          )}
+          {notificationsSupported() && notifyPerm === 'granted' && (
+            <span className="notify-on" title="Você receberá aviso ao sair do chat ou da aba">
+              Avisos ativos
+            </span>
+          )}
+          {notificationsSupported() && notifyPerm === 'denied' && (
+            <span className="notify-off" title="Permissão negada — ative nas configurações do navegador se quiser avisos">
+              Avisos bloqueados
+            </span>
+          )}
           {isAdmin && (
             <Link to="/admin" className="nav-link">Admin</Link>
           )}
@@ -393,6 +562,11 @@ export default function Agent() {
               <div ref={messagesEndRef} />
             </div>
 
+            <p className="notify-footnote">
+              A resposta do Fervô também é <strong>gravada no servidor</strong> ao terminar (como no ChatGPT):
+              ao voltar ao app ou à aba, a conversa atualiza sozinha. Use <strong>Ativar avisos</strong> para
+              alerta ao sair; em aparelhos muito restritivos o navegador pode pausar o site por um tempo.
+            </p>
             <form onSubmit={handleSubmit} className="input-form">
               <textarea
                 ref={inputRef}

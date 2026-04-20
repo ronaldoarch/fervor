@@ -103,6 +103,46 @@ export function processarEtapa2(manifestacao: Manifestacao): ConexaoTensao {
   }
 }
 
+/**
+ * Leitura opcional mais densa na Etapa 2. `repeticao` > 0 = já houve um aprofundamento antes (resposta curta).
+ */
+export function gerarAprofundamentoEtapa2(
+  manifestacao: Manifestacao,
+  ctx: Partial<ContextoUsuario>,
+  repeticao: number
+): string {
+  if (repeticao > 0) {
+    return (
+      'Já trouxemos uma camada extra em cima da Etapa 2. A leitura direta que você viu antes continua válida e completa para seguir.\n\n' +
+      'Quando quiser ir para o pivô (Etapa 3), responda **sim** — ou descreva outro ângulo que ainda queira explorar.\n\n' +
+      'Essa leitura ressoa com o que você observou, ou tem outro ângulo que quer explorar?'
+    )
+  }
+
+  const nome = manifestacao.nome
+  const cat = manifestacao.categoria
+  const local = ctx.localObservacao || 'o contexto que você descreveu'
+  const hip = ctx.hipoteseInicial || 'sua intuição inicial'
+  const hipShort = hip.length > 140 ? `${hip.slice(0, 137)}…` : hip
+
+  const promessa =
+    cat === 'EMERGENTE'
+      ? 'ruptura e frescor, teste de formas ainda instáveis'
+      : cat === 'RESIDUAL'
+        ? 'continuidade aconchegante e códigos reconhecíveis'
+        : 'legibilidade imediata e circulação ampla'
+
+  return (
+    'Aprofundamento (opcional) — tensões e camadas\n\n' +
+    `Sobre **${nome}** (${cat}), dá para puxar mais algumas tensões que costumam conviver ao mesmo tempo:\n\n` +
+    `- **Pressão entre camadas:** o que aparece em ${local} raramente é um fenômeno isolado; costura desejo de novidade com medo de errar o tom no coletivo — quem testa primeiro paga o preço da estranheza até isso virar norma, moda passageira ou piada interna.\n` +
+    `- **Contraste útil:** por um lado, o sinal promete ${promessa}; por outro, expõe quem fica de fora do código estético ou do meme — incluir e excluir faz parte da dinâmica simbólica.\n` +
+    `- **Eco da sua hipótese (${hipShort}):** vale abrir espaço para uma segunda leitura: o incômodo pode não ser só o óbvio, mas o que esse sinal *substitui*, *reprime* ou *adianta* no dia a dia das pessoas.\n\n` +
+    'Nada disso invalida a versão mais enxuta da Etapa 2; é material extra para quem curte semiótica em mais camadas.\n\n' +
+    'Essa leitura (incluindo o aprofundamento) ressoa com o que você observou, ou tem outro ângulo que quer explorar? Quando quiser o pivô prático, responda **sim** ou diga que podemos seguir.'
+  )
+}
+
 export function processarEtapa4(
   manifestacao: Manifestacao,
   areaAtuacao: string,
