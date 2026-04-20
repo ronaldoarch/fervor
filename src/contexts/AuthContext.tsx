@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import * as authApi from '../services/authApi'
+import { clearFervoChatSessionBoot } from '../utils/chatSessionBoot'
 
 export type UserRole = 'user' | 'admin'
 
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    clearFervoChatSessionBoot()
     authApi.logout()
     setUser(null)
   }

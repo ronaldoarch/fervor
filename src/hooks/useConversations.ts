@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as conversationApi from '../services/conversationApi'
 import { FERVO_WELCOME } from '../constants/fervoCopy'
+import {
+  clearFervoChatSessionBoot,
+  hasFervoChatSessionBooted,
+  markFervoChatSessionBooted,
+} from '../utils/chatSessionBoot'
+
+/** Evita duas criações em paralelo (ex.: Strict Mode) no primeiro arranque após login. */
+const bootConversationInFlight = new Set<string>()
 
 export interface Message {
   id: string
@@ -44,11 +52,38 @@ export function useConversations(userId: string | undefined) {
         setConversations([newConv])
         setActiveId(newConv.id)
         setMessages((newConv.messages || []).map(toMessage))
+        markFervoChatSessionBooted(userId)
       } else if (!activeId) {
-        const latest = list[0]
-        setActiveId(latest.id)
-        const full = await conversationApi.getConversation(latest.id)
-        setMessages((full.messages || []).map(toMessage))
+        const resumeLast = hasFervoChatSessionBooted(userId)
+        if (!resumeLast) {
+          if (bootConversationInFlight.has(userId)) {
+            return
+          }
+          bootConversationInFlight.add(userId)
+          try {
+            const newConv = await conversationApi.createConversation('Nova análise', [
+              { role: 'agent', content: FERVO_WELCOME },
+            ])
+            markFervoChatSessionBooted(userId)
+            setConversations([newConv, ...list])
+            setActiveId(newConv.id)
+            setMessages((newConv.messages || []).map(toMessage))
+          } catch (createErr) {
+            console.error('Erro ao criar conversa inicial:', createErr)
+            clearFervoChatSessionBoot()
+            const latest = list[0]
+            setActiveId(latest.id)
+            const full = await conversationApi.getConversation(latest.id)
+            setMessages((full.messages || []).map(toMessage))
+          } finally {
+            bootConversationInFlight.delete(userId)
+          }
+        } else {
+          const latest = list[0]
+          setActiveId(latest.id)
+          const full = await conversationApi.getConversation(latest.id)
+          setMessages((full.messages || []).map(toMessage))
+        }
       }
     } catch (err) {
       console.error('Erro ao carregar conversas:', err)
@@ -56,7 +91,7 @@ export function useConversations(userId: string | undefined) {
     } finally {
       setLoading(false)
     }
-  }, [userId])
+  }, [userId, activeId])
 
   useEffect(() => {
     if (!userId) {
