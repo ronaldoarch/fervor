@@ -16,6 +16,7 @@ import OpenAI from 'openai'
 import { registerAuthRoutes } from './routes/auth.js'
 import { verifyToken } from './auth.js'
 import { registerConversationRoutes } from './routes/conversations.js'
+import { registerAdminRoutes } from './routes/admin.js'
 import { getRelevantChunks, formatChunksForPrompt } from './knowledge.js'
 import { prisma } from './db.js'
 
@@ -116,6 +117,26 @@ Do Fervô pra você:
 
 Convide a enviar novas observações quando quiser uma nova análise.`
 
+async function getFervoSystemPromptFromStore() {
+  try {
+    const row = await prisma.appSetting.findUnique({ where: { key: 'system_prompt' } })
+    if (row?.value?.trim()) return row.value.trim()
+  } catch (e) {
+    console.warn('[chat] leitura AppSetting (system_prompt):', e.message)
+  }
+  return FERVO_SYSTEM
+}
+
+async function getOpenAIModelFromStore() {
+  try {
+    const row = await prisma.appSetting.findUnique({ where: { key: 'openai_model' } })
+    if (row?.value?.trim()) return row.value.trim()
+  } catch (_) {
+    /* tabela ausente ou erro transitório */
+  }
+  return process.env.OPENAI_MODEL || 'gpt-4o'
+}
+
 function stripAgentMarkdownArtifacts(content) {
   return String(content)
     .split('\n')
@@ -157,6 +178,7 @@ function buildConversationContext(messages) {
 
 registerAuthRoutes(app)
 registerConversationRoutes(app)
+registerAdminRoutes(app)
 
 function getUserIdFromBearer(req) {
   const auth = req.headers?.authorization
@@ -203,7 +225,8 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'messages é obrigatório (array de { role, content })' })
   }
 
-  let systemContent = FERVO_SYSTEM + buildConversationContext(messages)
+  const baseSystem = await getFervoSystemPromptFromStore()
+  let systemContent = baseSystem + buildConversationContext(messages)
   const apiKey = process.env.OPENAI_API_KEY || req.headers['x-api-key']
   const lastUserMsg = messages.filter((m) => m.role === 'user').pop()
   const lastUserText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : ''
@@ -211,7 +234,7 @@ app.post('/api/chat', async (req, res) => {
     try {
       const chunks = await getRelevantChunks(lastUserText, apiKey)
       if (chunks.length > 0) {
-        systemContent = FERVO_SYSTEM + '\n\n' + formatChunksForPrompt(chunks) + buildConversationContext(messages)
+        systemContent = baseSystem + '\n\n' + formatChunksForPrompt(chunks) + buildConversationContext(messages)
         console.log(`[RAG] ${chunks.length} chunk(s) injetados no contexto`)
       } else {
         console.log('[RAG] Nenhum chunk relevante (knowledge.json ausente ou sem match)')
@@ -240,8 +263,9 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     const openai = new OpenAI({ apiKey })
+    const model = await getOpenAIModelFromStore()
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o',
+      model,
       messages: apiMessages,
       temperature: 0.7,
     })

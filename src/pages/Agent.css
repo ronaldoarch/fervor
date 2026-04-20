@@ -206,6 +206,33 @@
   padding: 1rem;
 }
 
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-export-pdf {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.btn-export-pdf:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-export-pdf:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .chat-container {
   flex: 1;
   display: flex;

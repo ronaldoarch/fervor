@@ -21,6 +21,7 @@ import {
   gerarPerguntasProvocativas,
   gerarAprofundamentoEtapa2,
 } from '../agent/processor'
+import { exportAnalysisToPdf } from '../utils/exportAnalysisPdf'
 import type { ContextoUsuario, Etapa, Manifestacao } from '../agent/types'
 import './Agent.css'
 
@@ -138,6 +139,7 @@ export default function Agent() {
   const [aguardando, setAguardando] = useState(false)
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
   const [useAI, setUseAI] = useState<boolean | null>(null) // null = ainda não testou
   const [notifyPerm, setNotifyPerm] = useState(() => getFervoNotificationPermission())
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -459,6 +461,28 @@ export default function Agent() {
     loadConversation(convId)
   }
 
+  const handleExportPdf = async () => {
+    if (messages.length === 0 || aguardando) return
+    setExportingPdf(true)
+    try {
+      const conv = conversations.find((c) => c.id === activeId)
+      await exportAnalysisToPdf({
+        conversationTitle: conv?.title || 'Análise Fervô',
+        userName: user?.name,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+      })
+    } catch (err) {
+      console.error(err)
+      alert(err instanceof Error ? err.message : 'Não foi possível gerar o PDF. Tente de novo.')
+    } finally {
+      setExportingPdf(false)
+    }
+  }
+
   return (
     <div className="agent-page">
       <header className="agent-header">
@@ -526,6 +550,17 @@ export default function Agent() {
         </aside>
 
         <main className="agent-main">
+          <div className="chat-toolbar">
+            <button
+              type="button"
+              className="btn-export-pdf"
+              disabled={messages.length === 0 || aguardando || exportingPdf}
+              title="Baixar esta conversa em PDF (A4)"
+              onClick={() => void handleExportPdf()}
+            >
+              {exportingPdf ? 'Gerando PDF…' : 'Exportar análise em PDF'}
+            </button>
+          </div>
           <div className="chat-container">
             <div className="messages">
               {messages.length === 0 && !aguardando && (

@@ -39,3 +39,10 @@ model Message {
 
   @@index([conversationId])
 }
+
+/** Chave/valor para prompt do sistema, modelo OpenAI, etc. (painel admin). */
+model AppSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
