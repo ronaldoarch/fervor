@@ -2,45 +2,45 @@
 
 ## Cursor Cloud specific instructions
 
-### Overview
+### Visão geral
 
-Fervor (Fervô) is a cultural trend analysis AI agent — a full-stack web app (React + Express + PostgreSQL) that analyzes cultural observations through Cultural Materialism and produces actionable strategies.
+Fervor (Fervô) é um agente de IA para análise de tendências culturais — um app full-stack (React + Express + PostgreSQL) que analisa observações culturais pela lente do Materialismo Cultural e gera estratégias acionáveis.
 
-### Services
+### Serviços
 
-| Service | Port | Command |
-|---------|------|---------|
+| Serviço | Porta | Comando |
+|---------|-------|---------|
 | PostgreSQL 16 | 5432 | `docker compose up -d` |
-| Express.js Backend | 3001 | `npm run server` |
-| Vite Frontend (dev) | 5173 | `npm run dev` |
-| Both (backend+frontend) | 3001+5173 | `npm run dev:all` |
+| Backend Express.js | 3001 | `npm run server` |
+| Frontend Vite (dev) | 5173 | `npm run dev` |
+| Ambos (backend+frontend) | 3001+5173 | `npm run dev:all` |
 
-### Environment variables
+### Variáveis de ambiente
 
-Copy `.env.example` to `.env` and set:
-- `DATABASE_URL` — PostgreSQL connection string (docker-compose default: `postgresql://fervor:fervor@localhost:5432/fervor`)
-- `JWT_SECRET` — any 32+ char string for token signing
-- `OPENAI_API_KEY` — required for AI chat (without it, the backend returns 401 on `/api/chat`; frontend has a heuristic fallback)
+Copie `.env.example` para `.env` e configure:
+- `DATABASE_URL` — string de conexão PostgreSQL (padrão docker-compose: `postgresql://fervor:fervor@localhost:5432/fervor`)
+- `JWT_SECRET` — string de 32+ caracteres para assinatura de tokens
+- `OPENAI_API_KEY` — necessária para o chat com IA (sem ela, o backend retorna 401 em `/api/chat`; o frontend tem fallback heurístico)
 
-### Starting services for development
+### Iniciar serviços para desenvolvimento
 
-1. Start Docker daemon if not already running: `dockerd &`
-2. Start PostgreSQL: `docker compose up -d`
-3. Wait for Postgres to be ready: `docker exec workspace-postgres-1 pg_isready -U fervor`
-4. Run migrations (idempotent): `npm run db:migrate`
-5. Start all: `npm run dev:all`
+1. Iniciar Docker daemon se não estiver rodando: `dockerd &`
+2. Subir PostgreSQL: `docker compose up -d`
+3. Aguardar Postgres ficar pronto: `docker exec workspace-postgres-1 pg_isready -U fervor`
+4. Rodar migrations (idempotente): `npm run db:migrate`
+5. Iniciar tudo: `npm run dev:all`
 
-### Gotchas
+### Cuidados importantes
 
-- The `prisma/seed.js` script does NOT load `.env` automatically. Use `DATABASE_URL=... node prisma/seed.js` or ensure `DATABASE_URL` is exported in your shell.
-- The backend (`server/index.js`) reads `.env` itself using a manual parser — it does NOT use `dotenv/config`. The `DATABASE_URL` check happens before server startup; the server will `process.exit(1)` if it's missing.
-- TypeScript (`npx tsc --noEmit`) has a few pre-existing non-blocking errors in `processor.ts` and utility files. The Vite build ignores them; the project has no ESLint config.
-- Docker in Cloud Agent VMs requires `fuse-overlayfs` storage driver and `iptables-legacy`. See the Dockerfile/setup for details.
-- Demo credentials after seeding: `admin@fervor.com` / `admin123`.
+- O script `prisma/seed.js` NÃO carrega o `.env` automaticamente. Use `DATABASE_URL=... node prisma/seed.js` ou garanta que `DATABASE_URL` esteja exportada no shell.
+- O backend (`server/index.js`) lê o `.env` com um parser manual — NÃO usa `dotenv/config`. A verificação de `DATABASE_URL` acontece antes do startup; o servidor faz `process.exit(1)` se estiver ausente.
+- TypeScript (`npx tsc --noEmit`) tem alguns erros pré-existentes não bloqueantes em `processor.ts` e arquivos utilitários. O build do Vite os ignora; o projeto não tem configuração de ESLint.
+- Docker em VMs do Cloud Agent requer storage driver `fuse-overlayfs` e `iptables-legacy`.
+- Credenciais demo após seed: `admin@fervor.com` / `admin123`.
 
-### Testing & build
+### Testes e build
 
-- Build: `npm run build` (Vite production build)
-- Type check: `npx tsc --noEmit` (has pre-existing warnings, not blocking)
-- DB connection check: `npm run check-db`
-- No automated test suite exists in this repo.
+- Build: `npm run build` (build de produção Vite)
+- Type check: `npx tsc --noEmit` (tem warnings pré-existentes, não bloqueantes)
+- Verificar conexão com banco: `npm run check-db`
+- Não existe suite de testes automatizados neste repositório.
