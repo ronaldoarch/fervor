@@ -203,11 +203,6 @@ export default function Login() {
               {mode === 'login' ? 'Cadastre-se' : 'Entrar'}
             </button>
           </p>
-          {mode === 'login' && (
-            <p className="login-hint">
-              Após o seed: admin@fervor.com / admin123
-            </p>
-          )}
         </section>
       </div>
     </div>
