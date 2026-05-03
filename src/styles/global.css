@@ -1,14 +1,21 @@
 :root {
-  --bg-primary: #050B07;
-  --bg-secondary: #0a1510;
-  --bg-tertiary: #0f2015;
-  --accent: #A633ED;
-  --accent-soft: #A633ED66;
-  --accent-hover: #8b2bc4;
-  --text-primary: #e8f5e9;
-  --text-secondary: #7cb87a;
-  --border: #1a2e1f;
-  --success: #3AE001;
+  --bg-primary: #F2E7E3;
+  --bg-secondary: #F5F1F0;
+  --bg-tertiary: #EFE4E0;
+  --accent: #C35921;
+  --accent-hover: #B04E1B;
+  --accent-active: #9A4416;
+  --accent-soft: #3DAB8E33;
+  --title-accent: #1F5E5C;
+  --link-hover: #2E8A78;
+  --focus-ring: #3DAB8E;
+  --logo-olive: #3D7A4F;
+  --text-primary: #1F2422;
+  --text-secondary: #8A8580;
+  --text-placeholder: #B5AFA9;
+  --border: #E4DDD8;
+  --success: #3D7A4F;
+  --error: #C24535;
   --radius: 12px;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Outfit', system-ui, sans-serif;
@@ -53,9 +60,15 @@ a {
 }
 
 a:hover {
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
 input, textarea {
   font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-placeholder);
 }

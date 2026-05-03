@@ -115,14 +115,14 @@
 }
 
 .admin-alert--error {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid var(--error);
   color: var(--text-primary);
 }
 
 .admin-alert--ok {
-  background: color-mix(in srgb, #22c55e 15%, transparent);
-  border: 1px solid #22c55e;
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+  border: 1px solid var(--success);
   color: var(--text-primary);
 }
 
@@ -226,8 +226,13 @@
 
 .btn-admin-primary {
   background: var(--accent);
-  color: var(--bg-primary);
+  color: white;
   border-color: var(--accent);
+}
+
+.btn-admin-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .btn-admin-primary:disabled {
@@ -248,8 +253,8 @@
 
 .btn-admin-danger {
   background: transparent;
-  border-color: color-mix(in srgb, #ef4444 50%, var(--border));
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--error) 50%, var(--border));
+  color: var(--error);
   font-size: 0.85rem;
   padding: 0.35rem 0.65rem;
 }
