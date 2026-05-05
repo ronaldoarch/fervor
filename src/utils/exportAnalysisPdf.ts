@@ -90,13 +90,16 @@ export async function exportAnalysisToPdf(params: {
   const container = document.createElement('div')
   Object.assign(container.style, {
     position: 'fixed',
-    left: '-12000px',
+    left: '0',
     top: '0',
     width: '190mm',
     boxSizing: 'border-box',
     padding: '16mm 14mm',
     backgroundColor: '#ffffff',
     color: '#111111',
+    opacity: '0',
+    pointerEvents: 'none',
+    zIndex: '-1',
     fontFamily:
       'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: '10.5pt',
@@ -127,6 +130,8 @@ export async function exportAnalysisToPdf(params: {
 
   try {
     const html2pdf = (await import('html2pdf.js')).default
+    // Em alguns navegadores mobile, html2canvas gera página em branco se o nó ainda não foi "layoutado".
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     await html2pdf()
       .set({
         margin: [10, 10, 10, 10],

@@ -117,6 +117,21 @@ Do Fervô pra você:
 
 Convide a enviar novas observações quando quiser uma nova análise.`
 
+const FERVO_ETAPA_3_SAFE = `ETAPA 3
+
+O pivô: Interação e Contextualização
+
+Agora me ajuda a levar essa análise pra prática e me conta:
+
+Em que área você atua? (o Fervô já sugere algumas áreas)
+Algumas áreas que costumo cruzar com esse tipo de leitura: Design, Moda, Branding, Conteúdo, UX/UI, arquitetura de marca, pesquisa de tendência, comunicação, produto, embalagem, varejo (visual merchandising), RH e cultura organizacional.
+
+Onde você quer aplicar esses insights? (o Fervô já sugere alguns insights)
+Alguns lugares comuns para pousar o insight: campanha (360 ou digital), redes sociais e playbook de criadores, experiência de loja ou evento, pitch para investidor ou cliente, naming e conceito de linha, cultura interna (workshop, ritual de time), material de venda, lançamento de produto ou coleção.
+
+Qual o objetivo central desse projeto? (o Fervô já sugere algumas ideias)
+Objetivos que aparecem bastante: lançamento ou relançamento, reposicionamento, validação ou teste de conceito, mapa de oportunidades, direcionamento de briefing, linha de produto ou coleção, tom de voz e narrativa, provocação de time ou sprint criativo.`
+
 async function getFervoSystemPromptFromStore() {
   try {
     const row = await prisma.appSetting.findUnique({ where: { key: 'system_prompt' } })
@@ -138,11 +153,24 @@ async function getOpenAIModelFromStore() {
 }
 
 function stripAgentMarkdownArtifacts(content) {
-  return String(content)
+  const source = String(content ?? '')
+  const hasLeakedEtapa3Template =
+    /\betapa\s*3\b/i.test(source) &&
+    /(\[logo em seguida,\s*exemplos|não envie só as três perguntas)/i.test(source)
+
+  if (hasLeakedEtapa3Template) {
+    return FERVO_ETAPA_3_SAFE
+  }
+
+  return source
     .split('\n')
     .map((line) => {
       const t = line.replace(/^#{1,6}\s+/, '')
       if (/^-{3,}\s*$/.test(t.trim())) return ''
+      if (/^\s*\[[^\]]+\]\s*$/.test(t)) return ''
+      if (/^\s*não envie só as três perguntas/i.test(t)) return ''
+      if (/^\s*formatação\s*\(obrigatório\)/i.test(t)) return ''
+      if (/^\s*fluxo\s*[—-]\s*4 etapas/i.test(t)) return ''
       return t
     })
     .join('\n')
