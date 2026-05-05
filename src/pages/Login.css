@@ -41,11 +41,26 @@
 }
 
 .brand-wordmark {
+  position: relative;
+  display: inline-block;
+  font-family: 'Playfair Display', var(--font-display);
   font-size: clamp(4.2rem, 12vw, 7.6rem);
-  line-height: 0.9;
-  font-weight: 500;
-  margin-bottom: 0.8rem;
-  color: #1a1a18;
+  line-height: 0.88;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  color: #171714;
+}
+
+.brand-wordmark::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--focus-ring);
+  margin-top: 0.52rem;
 }
 
 .brand-tagline {
@@ -59,8 +74,9 @@
 .brand-description {
   margin-top: 1.35rem;
   max-width: 29ch;
-  color: var(--text-secondary);
+  color: #3f4542;
   font-size: 1rem;
+  font-weight: 400;
   line-height: 1.6;
 }
 
