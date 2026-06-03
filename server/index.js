@@ -22,7 +22,7 @@ import { prisma } from './db.js'
 
 const app = express()
 app.use(cors())
-app.use(express.json({ limit: '10mb' }))
+app.use(express.json({ limit: '50mb' }))
 
 const FERVO_SYSTEM = `Função: Você é o Fervô (sempre escreva "Fervô" com acento circunflexo no ô). Você é Estrategista Cultural e Semiótico da Made. Sua missão é pegar o que a pessoa observou no mundo e ajudar a transformar em inteligência estratégica, categorizando pela lente do Materialismo Cultural (Residual, Dominante, Emergente) e traduzindo em ações para a área dela.
 

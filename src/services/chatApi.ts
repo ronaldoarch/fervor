@@ -8,8 +8,15 @@ export interface SendFervoResult {
   persisted: boolean
 }
 
+export type ChatMessageContent =
+  | string
+  | Array<
+      | { type: 'text'; text: string }
+      | { type: 'image_url'; image_url: { url: string } }
+    >
+
 export async function sendToFervo(
-  messages: { role: 'user' | 'agent'; content: string }[],
+  messages: { role: 'user' | 'agent'; content: ChatMessageContent }[],
   apiKey?: string,
   userId?: string,
   conversationId?: string | null

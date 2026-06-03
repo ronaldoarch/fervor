@@ -15,9 +15,62 @@ export interface Message {
   role: 'agent' | 'user'
   content: string
   timestamp: Date
+  imagePreviewUrl?: string
+}
+
+const IMAGE_PAYLOAD_PREFIX = '[fervo-image]'
+
+function deserializeStoredUserContent(stored: string): { text: string; imageDataUrl?: string } {
+  if (stored.startsWith(IMAGE_PAYLOAD_PREFIX)) {
+    try {
+      const payload = JSON.parse(stored.slice(IMAGE_PAYLOAD_PREFIX.length)) as {
+        text?: string
+        imageDataUrl?: string
+      }
+      return {
+        text: payload.text || 'Imagem enviada para análise semiótica.',
+        imageDataUrl: payload.imageDataUrl,
+      }
+    } catch {
+      return { text: stored }
+    }
+  }
+  try {
+    const parsed = JSON.parse(stored)
+    if (Array.isArray(parsed)) {
+      const text = parsed
+        .filter((part) => part?.type === 'text' && typeof part?.text === 'string')
+        .map((part) => part.text)
+        .join(' ')
+        .trim()
+      const imageDataUrl = parsed.find((part) => part?.type === 'image_url')?.image_url?.url
+      return {
+        text: text || 'Imagem enviada para análise semiótica.',
+        imageDataUrl: typeof imageDataUrl === 'string' ? imageDataUrl : undefined,
+      }
+    }
+  } catch {
+    // valor simples
+  }
+  return { text: stored }
+}
+
+function serializeUserMessage(text: string, imageDataUrl?: string): string {
+  if (!imageDataUrl) return text
+  return `${IMAGE_PAYLOAD_PREFIX}${JSON.stringify({ text, imageDataUrl })}`
 }
 
 function toMessage(m: conversationApi.ApiMessage): Message {
+  if (m.role === 'user') {
+    const parsed = deserializeStoredUserContent(m.content)
+    return {
+      id: m.id,
+      role: m.role,
+      content: parsed.text,
+      imagePreviewUrl: parsed.imageDataUrl,
+      timestamp: new Date(m.timestamp),
+    }
+  }
   return {
     id: m.id,
     role: m.role,
@@ -124,7 +177,10 @@ export function useConversations(userId: string | undefined) {
           title: title ?? undefined,
           messages: msgs.map((m) => ({
             role: m.role,
-            content: m.content,
+            content:
+              m.role === 'user'
+                ? serializeUserMessage(m.content, m.imagePreviewUrl)
+                : m.content,
           })),
         })
         setConversations((prev) =>
@@ -149,7 +205,13 @@ export function useConversations(userId: string | undefined) {
       try {
         const stored =
           initialMessages != null && initialMessages.length > 0
-            ? initialMessages.map((m) => ({ role: m.role, content: m.content }))
+            ? initialMessages.map((m) => ({
+                role: m.role,
+                content:
+                  m.role === 'user'
+                    ? serializeUserMessage(m.content, m.imagePreviewUrl)
+                    : m.content,
+              }))
             : [{ role: 'agent' as const, content: FERVO_WELCOME }]
         const newConv = await conversationApi.createConversation('Nova análise', stored)
         setConversations((prev) => [newConv, ...prev])

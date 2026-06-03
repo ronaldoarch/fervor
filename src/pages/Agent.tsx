@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConversationsContext } from '../contexts/ConversationsContext'
 import * as conversationApi from '../services/conversationApi'
-import { sendToFervo } from '../services/chatApi'
+import { sendToFervo, type ChatMessageContent } from '../services/chatApi'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
   getFervoNotificationPermission,
@@ -31,6 +31,88 @@ interface Message {
   content: string
   timestamp: Date
   analise?: unknown
+  imagePreviewUrl?: string
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognition
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: SpeechRecognitionEvent) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+interface SpeechRecognitionEvent {
+  results: ArrayLike<{
+    0: { transcript: string }
+  }>
+}
+interface SpeechRecognitionErrorEvent {
+  error: string
+}
+
+const IMAGE_PAYLOAD_PREFIX = '[fervo-image]'
+const MAX_IMAGE_UPLOAD_MB = 40
+const MAX_IMAGE_UPLOAD_BYTES = MAX_IMAGE_UPLOAD_MB * 1024 * 1024
+
+function serializeUserMessage(text: string, imageDataUrl?: string | null): string {
+  if (!imageDataUrl) return text
+  return `${IMAGE_PAYLOAD_PREFIX}${JSON.stringify({ text, imageDataUrl })}`
+}
+
+function deserializeUserMessage(stored: string): { text: string; imageDataUrl?: string } {
+  if (!stored.startsWith(IMAGE_PAYLOAD_PREFIX)) return { text: stored }
+  try {
+    const payload = JSON.parse(stored.slice(IMAGE_PAYLOAD_PREFIX.length)) as {
+      text?: string
+      imageDataUrl?: string
+    }
+    return {
+      text: payload.text || 'Imagem enviada para análise semiótica.',
+      imageDataUrl: payload.imageDataUrl,
+    }
+  } catch {
+    return { text: stored }
+  }
+}
+
+function deserializeStoredUserContent(stored: string): { text: string; imageDataUrl?: string } {
+  if (stored.startsWith(IMAGE_PAYLOAD_PREFIX)) return deserializeUserMessage(stored)
+  try {
+    const parsed = JSON.parse(stored)
+    if (Array.isArray(parsed)) {
+      const text = parsed
+        .filter((part) => part?.type === 'text' && typeof part?.text === 'string')
+        .map((part) => part.text)
+        .join(' ')
+        .trim()
+      const imageDataUrl = parsed.find((part) => part?.type === 'image_url')?.image_url?.url
+      return {
+        text: text || 'Imagem enviada para análise semiótica.',
+        imageDataUrl: typeof imageDataUrl === 'string' ? imageDataUrl : undefined,
+      }
+    }
+  } catch {
+    // conteúdo normal em texto puro
+  }
+  return { text: stored }
+}
+
+function renderTextWithLinks(text: string) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g)
+  return parts.map((part, i) => {
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a key={`${part}-${i}`} href={part} target="_blank" rel="noreferrer">
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
 }
 
 function TypewriterContent({ content, onComplete }: { content: string; onComplete: () => void }) {
@@ -86,11 +168,14 @@ function TypewriterContent({ content, onComplete }: { content: string; onComplet
     <div className="message-content">
       {display.split('\n').map((line, i) => (
         <p key={i}>
-          {line ? line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
-            part.startsWith('**') && part.endsWith('**')
-              ? <strong key={j}>{part.slice(2, -2)}</strong>
-              : part
-          ) : <br />}
+          {line
+            ? line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return <strong key={j}>{renderTextWithLinks(part.slice(2, -2))}</strong>
+                }
+                return <span key={j}>{renderTextWithLinks(part)}</span>
+              })
+            : <br />}
         </p>
       ))}
       {!done && <span className="typewriter-cursor">|</span>}
@@ -142,13 +227,38 @@ export default function Agent() {
   const [exportingPdf, setExportingPdf] = useState(false)
   const [useAI, setUseAI] = useState<boolean | null>(null) // null = ainda não testou
   const [notifyPerm, setNotifyPerm] = useState(() => getFervoNotificationPermission())
+  const [listening, setListening] = useState(false)
+  const [speechAvailable, setSpeechAvailable] = useState(false)
+  const [speechError, setSpeechError] = useState<string | null>(null)
+  const [ttsEnabled, setTtsEnabled] = useState(false)
+  const [selectedImageDataUrl, setSelectedImageDataUrl] = useState<string | null>(null)
+  const [selectedImageName, setSelectedImageName] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  useEffect(() => {
+    const w = window as Window & {
+      webkitSpeechRecognition?: SpeechRecognitionCtor
+      SpeechRecognition?: SpeechRecognitionCtor
+    }
+    const SpeechRecognitionAPI = w.SpeechRecognition || w.webkitSpeechRecognition
+    setSpeechAvailable(Boolean(SpeechRecognitionAPI))
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.stop()
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    }
+  }, [])
+
   /** Quantas vezes o usuário pediu aprofundamento na Etapa 2 (heurística). */
   const profundidadeEtapa2Ref = useRef(0)
 
   const deliverAgentMessage = (content: string, analise?: unknown) => {
     addMessage('agent', content, analise)
+    speak(content)
     void notifyFervoReplyReady(content).catch(() => {})
   }
 
@@ -176,12 +286,24 @@ export default function Agent() {
         const remote = full.messages || []
         setMessages((cur) => {
           if (remote.length <= cur.length) return cur
-          return remote.map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            timestamp: new Date(m.timestamp),
-          }))
+          return remote.map((m) => {
+            if (m.role === 'user') {
+              const parsed = deserializeStoredUserContent(m.content)
+              return {
+                id: m.id,
+                role: m.role,
+                content: parsed.text,
+                imagePreviewUrl: parsed.imageDataUrl,
+                timestamp: new Date(m.timestamp),
+              }
+            }
+            return {
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(m.timestamp),
+            }
+          })
         })
       })
     }
@@ -203,7 +325,12 @@ export default function Agent() {
     addMessageAndReturn(role, content, analise)
   }
 
-  const addMessageAndReturn = (role: 'agent' | 'user', content: string, analise?: unknown): Message => {
+  const addMessageAndReturn = (
+    role: 'agent' | 'user',
+    content: string,
+    analise?: unknown,
+    imagePreviewUrl?: string
+  ): Message => {
     const newMsg: Message = {
       id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
@@ -212,13 +339,17 @@ export default function Agent() {
       content,
       timestamp: new Date(),
       analise,
+      imagePreviewUrl: role === 'user' ? imagePreviewUrl : undefined,
     }
     setMessages((prev) => {
       const isFirstUserMsg = prev.filter((m) => m.role === 'user').length === 0
       const base = prev.map((m) => ({
             id: m.id,
             role: m.role,
-            content: m.content,
+            content:
+              m.role === 'user'
+                ? serializeUserMessage(m.content, m.imagePreviewUrl)
+                : m.content,
             timestamp: m.timestamp,
             analise: (m as Message & { analise?: unknown }).analise,
           }))
@@ -232,12 +363,102 @@ export default function Agent() {
     return newMsg
   }
 
+  const buildUserContentPayload = (text: string, imageDataUrl?: string | null): ChatMessageContent => {
+    if (!imageDataUrl) return text
+    return [
+      { type: 'text', text },
+      { type: 'image_url', image_url: { url: imageDataUrl } },
+    ]
+  }
+
+  const buildApiMessages = (msgs: Message[]) =>
+    msgs.map((m) => ({
+      role: m.role as 'user' | 'agent',
+      content: m.imagePreviewUrl
+        ? buildUserContentPayload(m.content, m.imagePreviewUrl)
+        : (m.content as ChatMessageContent),
+    }))
+
+  const speak = (text: string) => {
+    if (!ttsEnabled || !('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'pt-BR'
+    utterance.rate = 1
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const handleToggleMic = () => {
+    const w = window as Window & {
+      webkitSpeechRecognition?: SpeechRecognitionCtor
+      SpeechRecognition?: SpeechRecognitionCtor
+    }
+    const SpeechRecognitionAPI = w.SpeechRecognition || w.webkitSpeechRecognition
+    if (!SpeechRecognitionAPI) {
+      setSpeechError('Seu navegador não suporta comando de voz.')
+      return
+    }
+
+    if (recognitionRef.current && listening) {
+      recognitionRef.current.stop()
+      return
+    }
+
+    const recognition = new SpeechRecognitionAPI()
+    recognition.lang = 'pt-BR'
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? ''
+      if (transcript.trim()) {
+        setInput((prev) => (prev ? `${prev.trim()} ${transcript.trim()}` : transcript.trim()))
+      }
+    }
+    recognition.onerror = (event) => {
+      setSpeechError(`Falha no reconhecimento de voz: ${event.error}`)
+    }
+    recognition.onend = () => setListening(false)
+    recognitionRef.current = recognition
+    setSpeechError(null)
+    setListening(true)
+    recognition.start()
+  }
+
+  const handleSelectImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Selecione um arquivo de imagem válido.')
+      return
+    }
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      alert(`A imagem deve ter no máximo ${MAX_IMAGE_UPLOAD_MB}MB.`)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : null
+      setSelectedImageDataUrl(dataUrl)
+      setSelectedImageName(file.name)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const clearSelectedImage = () => {
+    setSelectedImageDataUrl(null)
+    setSelectedImageName(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || aguardando) return
+    if ((!input.trim() && !selectedImageDataUrl) || aguardando) return
 
-    const userMsg = input.trim()
+    const userMsg = input.trim() || 'Imagem enviada para análise semiótica.'
+    const imageDataUrl = selectedImageDataUrl
     setInput('')
+    clearSelectedImage()
     setAguardando(true)
 
     const snapshot = messages
@@ -250,14 +471,9 @@ export default function Agent() {
       role: 'user',
       content: userMsg,
       timestamp: new Date(),
+      imagePreviewUrl: imageDataUrl || undefined,
     }
-    const baseMsgs = snapshot.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      timestamp: m.timestamp,
-      analise: (m as Message & { analise?: unknown }).analise,
-    }))
+    const baseMsgs = snapshot.map((m) => ({ ...m }))
     const nextWithUser: Message[] = [...baseMsgs, newUserMsg]
     const chatTitle =
       isFirstUserMsg ? userMsg.slice(0, 40) + (userMsg.length > 40 ? '...' : '') : undefined
@@ -265,10 +481,7 @@ export default function Agent() {
     setMessages(nextWithUser)
     await saveMessages(nextWithUser, chatTitle)
 
-    const apiMessages = nextWithUser.map((m) => ({
-      role: m.role as 'user' | 'agent',
-      content: m.content,
-    }))
+    const apiMessages = buildApiMessages(nextWithUser)
 
     try {
       if (useAI !== false) {
@@ -283,12 +496,24 @@ export default function Agent() {
         if (persisted && activeId) {
           const full = await conversationApi.getConversation(activeId)
           setMessages(
-            (full.messages || []).map((m) => ({
-              id: m.id,
-              role: m.role,
-              content: m.content,
-              timestamp: new Date(m.timestamp),
-            }))
+            (full.messages || []).map((m) => {
+              if (m.role === 'user') {
+                const parsed = deserializeStoredUserContent(m.content)
+                return {
+                  id: m.id,
+                  role: m.role,
+                  content: parsed.text,
+                  imagePreviewUrl: parsed.imageDataUrl,
+                  timestamp: new Date(m.timestamp),
+                }
+              }
+              return {
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: new Date(m.timestamp),
+              }
+            })
           )
           const msgs = full.messages || []
           const lastAgent = [...msgs].reverse().find((m) => m.role === 'agent')
@@ -488,7 +713,8 @@ export default function Agent() {
       <header className="agent-header">
         <div className="header-left">
           <button className="sidebar-toggle" onClick={() => setSidebarOpen((s) => !s)} aria-label="Abrir conversas">☰</button>
-          <h1>Fervô</h1>
+          <div className="brand-chip" aria-hidden="true">🌿</div>
+          <h1>Fervô + Made</h1>
           <span className="agent-badge">Agente de Tendência</span>
         </div>
         <nav className="header-nav">
@@ -560,6 +786,14 @@ export default function Agent() {
             >
               {exportingPdf ? 'Gerando PDF…' : 'Exportar análise em PDF'}
             </button>
+            <button
+              type="button"
+              className={`btn-export-pdf ${ttsEnabled ? 'tts-on' : ''}`}
+              onClick={() => setTtsEnabled((v) => !v)}
+              title="Ler em voz alta as respostas do Fervô"
+            >
+              {ttsEnabled ? 'Voz ativa' : 'Ativar voz'}
+            </button>
           </div>
           <div className="chat-container">
             <div className="messages">
@@ -573,6 +807,9 @@ export default function Agent() {
                   msg.role === 'agent' ? sanitizeAgentText(msg.content) : msg.content
                 return (
                 <div key={msg.id} className={`message message-${msg.role}`}>
+                  {msg.imagePreviewUrl && (
+                    <img className="message-image" src={msg.imagePreviewUrl} alt="Imagem enviada pelo usuário" />
+                  )}
                   {msg.role === 'agent' && msg.id === typingMessageId ? (
                     <TypewriterContent
                       content={display}
@@ -582,11 +819,14 @@ export default function Agent() {
                     <div className="message-content">
                       {display.split('\n').map((line, i) => (
                         <p key={i}>
-                          {line ? line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
-                            part.startsWith('**') && part.endsWith('**')
-                              ? <strong key={j}>{part.slice(2, -2)}</strong>
-                              : part
-                          ) : <br />}
+                          {line
+                            ? line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  return <strong key={j}>{renderTextWithLinks(part.slice(2, -2))}</strong>
+                                }
+                                return <span key={j}>{renderTextWithLinks(part)}</span>
+                              })
+                            : <br />}
                         </p>
                       ))}
                     </div>
@@ -603,15 +843,49 @@ export default function Agent() {
               alerta ao sair; em aparelhos muito restritivos o navegador pode pausar o site por um tempo.
             </p>
             <form onSubmit={handleSubmit} className="input-form">
+              <div className="input-actions">
+                <button
+                  type="button"
+                  className={`btn-mic ${listening ? 'listening' : ''}`}
+                  onClick={handleToggleMic}
+                  disabled={!speechAvailable || aguardando}
+                  title={speechAvailable ? 'Comando de voz' : 'Comando de voz indisponível neste navegador'}
+                >
+                  {listening ? 'Parar voz' : 'Falar'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-mic"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={aguardando}
+                  title="Enviar imagem"
+                >
+                  Imagem
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSelectImage}
+                  className="hidden-file-input"
+                />
+              </div>
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Digite sua mensagem, manifestação cultural ou análise..."
+                placeholder="Digite sua mensagem (links são aceitos), ou use voz/imagem..."
                 rows={3}
                 disabled={aguardando}
               />
-              <button type="submit" disabled={aguardando || !input.trim()}>
+              {selectedImageName && (
+                <div className="selected-image-tag">
+                  <span>{selectedImageName}</span>
+                  <button type="button" onClick={clearSelectedImage} aria-label="Remover imagem selecionada">×</button>
+                </div>
+              )}
+              {speechError && <p className="speech-error">{speechError}</p>}
+              <button type="submit" disabled={aguardando || (!input.trim() && !selectedImageDataUrl)}>
                 {aguardando ? '...' : 'Enviar'}
               </button>
             </form>
