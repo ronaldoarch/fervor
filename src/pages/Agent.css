@@ -396,17 +396,17 @@
   line-height: 1.35;
   color: var(--text-secondary);
   max-width: 52rem;
+  display: none;
 }
 
 .input-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--border);
+  gap: 0.45rem;
+  padding: 0.65rem 0 0.35rem;
   position: sticky;
   bottom: 0;
-  background: var(--bg-primary);
+  background: linear-gradient(to top, var(--bg-primary), color-mix(in srgb, var(--bg-primary) 72%, transparent));
 }
 
 .input-brand-row {
@@ -427,6 +427,7 @@
 .input-actions {
   display: flex;
   gap: 0.5rem;
+  display: none;
 }
 
 .btn-mic {
@@ -524,6 +525,114 @@
   margin: 0;
   color: var(--error);
   font-size: 0.78rem;
+}
+
+.composer-shell {
+  min-height: 3rem;
+  width: min(100%, 980px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.38rem 0.45rem 0.38rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #2a2a2a;
+  background: #202123;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+}
+
+.composer-add-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #f1f1f1;
+  font-size: 1.6rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.composer-add-btn:hover:not(:disabled) {
+  background: #2d2f33;
+}
+
+.composer-textarea {
+  flex: 1;
+  min-height: 1.55rem;
+  max-height: 9rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #f4f4f5;
+  resize: none;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  padding: 0.38rem 0.1rem;
+}
+
+.composer-textarea::placeholder {
+  color: #adadb8;
+}
+
+.composer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.15rem;
+}
+
+.composer-icon-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #f4f4f5;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.composer-icon-btn:hover:not(:disabled) {
+  background: #2d2f33;
+}
+
+.composer-icon-btn.listening {
+  color: #f4a261;
+}
+
+.composer-send-btn {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  border: none;
+  background: #fff;
+  color: #121212;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  align-self: auto;
+}
+
+.composer-send-btn:hover:not(:disabled) {
+  background: #f1f1f1;
+}
+
+.composer-send-btn:disabled {
+  background: #84848a;
+  color: #ddd;
+}
+
+.legacy-actions {
+  display: none !important;
 }
 
 @media (max-width: 768px) {

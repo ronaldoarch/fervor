@@ -475,6 +475,14 @@ export default function Agent() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      const form = e.currentTarget.form
+      form?.requestSubmit()
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if ((!input.trim() && !selectedImageDataUrl) || aguardando) return
@@ -864,17 +872,69 @@ export default function Agent() {
               <div ref={messagesEndRef} />
             </div>
 
-            <p className="notify-footnote">
-              A resposta do Fervô também é <strong>gravada no servidor</strong> ao terminar (como no ChatGPT):
-              ao voltar ao app ou à aba, a conversa atualiza sozinha. Use <strong>Ativar avisos</strong> para
-              alerta ao sair; em aparelhos muito restritivos o navegador pode pausar o site por um tempo.
-            </p>
             <form onSubmit={handleSubmit} className="input-form">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleSelectImage}
+                className="hidden-file-input"
+              />
+              {selectedImageName && (
+                <div className="selected-image-tag">
+                  <span>{selectedImageName}</span>
+                  <button type="button" onClick={clearSelectedImage} aria-label="Remover imagem selecionada">×</button>
+                </div>
+              )}
+              <div className="composer-shell">
+                <button
+                  type="button"
+                  className="composer-add-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={aguardando}
+                  title="Enviar imagem"
+                  aria-label="Adicionar imagem"
+                >
+                  +
+                </button>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                  placeholder="Pergunte alguma coisa"
+                  rows={1}
+                  disabled={aguardando}
+                  className="composer-textarea"
+                />
+                <div className="composer-right">
+                  <button
+                    type="button"
+                    className={`composer-icon-btn ${listening ? 'listening' : ''}`}
+                    onClick={handleToggleMic}
+                    disabled={!speechAvailable || aguardando}
+                    title={speechAvailable ? 'Comando de voz' : 'Comando de voz indisponível neste navegador'}
+                    aria-label={listening ? 'Parar gravação de voz' : 'Iniciar gravação de voz'}
+                  >
+                    🎙
+                  </button>
+                  <button
+                    type="submit"
+                    className="composer-send-btn"
+                    disabled={aguardando || (!input.trim() && !selectedImageDataUrl)}
+                    aria-label="Enviar mensagem"
+                    title="Enviar"
+                  >
+                    {aguardando ? '…' : '➤'}
+                  </button>
+                </div>
+              </div>
+              {speechError && <p className="speech-error">{speechError}</p>}
               <div className="input-brand-row" aria-hidden="true">
                 <img src={fervoMascote} alt="" className="input-mascot" />
                 <span>Fervô</span>
               </div>
-              <div className="input-actions">
+              <div className="legacy-actions" hidden>
                 <button
                   type="button"
                   className={`btn-mic ${listening ? 'listening' : ''}`}
@@ -893,32 +953,7 @@ export default function Agent() {
                 >
                   Imagem
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSelectImage}
-                  className="hidden-file-input"
-                />
               </div>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Digite sua mensagem (links são aceitos), ou use voz/imagem..."
-                rows={3}
-                disabled={aguardando}
-              />
-              {selectedImageName && (
-                <div className="selected-image-tag">
-                  <span>{selectedImageName}</span>
-                  <button type="button" onClick={clearSelectedImage} aria-label="Remover imagem selecionada">×</button>
-                </div>
-              )}
-              {speechError && <p className="speech-error">{speechError}</p>}
-              <button type="submit" disabled={aguardando || (!input.trim() && !selectedImageDataUrl)}>
-                {aguardando ? '...' : 'Enviar'}
-              </button>
             </form>
           </div>
         </main>
