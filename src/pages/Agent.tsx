@@ -4,8 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConversationsContext } from '../contexts/ConversationsContext'
 import * as conversationApi from '../services/conversationApi'
 import { sendToFervo, type ChatMessageContent } from '../services/chatApi'
-import fervoLogoPreto from '../assets/fervo-logo-preto.png'
-import fervoLogoBranco from '../assets/fervo-logo-branco.png'
 import fervoMascote from '../assets/fervo-mascote.png'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
@@ -739,9 +737,9 @@ export default function Agent() {
       <header className="agent-header">
         <div className="header-left">
           <button className="sidebar-toggle" onClick={() => setSidebarOpen((s) => !s)} aria-label="Abrir conversas">☰</button>
-          <div className="brand-logos-wrap">
-            <img className="brand-logo brand-logo-dark" src={fervoLogoPreto} alt="Logo Fervô" />
-            <img className="brand-logo brand-logo-light" src={fervoLogoBranco} alt="Logo Fervô" />
+          <div className="brand-lockup">
+            <img className="brand-avatar" src={fervoMascote} alt="Fervô" />
+            <span className="brand-name">Fervô</span>
           </div>
           <span className="brand-made">Made</span>
           <span className="agent-badge">Agente de Tendência</span>

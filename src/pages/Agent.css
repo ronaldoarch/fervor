@@ -20,37 +20,30 @@
   gap: 0.65rem;
 }
 
-.brand-logos-wrap {
-  position: relative;
+.brand-lockup {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 7.2rem;
-  height: 2.1rem;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem 0.2rem 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-secondary);
 }
 
-.brand-logo {
-  position: absolute;
-  width: 100%;
-  max-width: 30vw;
+.brand-avatar {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
   object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--border);
 }
 
-.brand-logo-light {
-  opacity: 0;
-}
-
-.agent-header.dark-logo .brand-logo-dark {
-  opacity: 0;
-}
-
-.agent-header.dark-logo .brand-logo-light {
-  opacity: 1;
-}
-
-.brand-logo-dark,
-.brand-logo-light {
-  transition: opacity 0.2s ease;
+.brand-name {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1;
 }
 
 .brand-made {
@@ -551,9 +544,9 @@
     justify-content: flex-end;
   }
 
-  .brand-logos-wrap {
-    width: 6rem;
-    height: 1.8rem;
+  .brand-lockup {
+    width: auto;
+    height: auto;
   }
 
   .message {
