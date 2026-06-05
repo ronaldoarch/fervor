@@ -1,21 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import fervoAvatar from '../assets/fervo-avatar.png'
+import fervoMascote from '../assets/fervo-mascote.png'
+import fervoLogoPreto from '../assets/fervo-logo-preto.png'
 import './Login.css'
 
 type Mode = 'login' | 'register'
-type AvatarState = 'idle' | 'look-email' | 'peek-password'
-type AvatarCue = 'none' | 'cue-email' | 'cue-password'
-
 export default function Login() {
   const [mode, setMode] = useState<Mode>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [avatarState, setAvatarState] = useState<AvatarState>('idle')
-  const [avatarCue, setAvatarCue] = useState<AvatarCue>('none')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuth()
@@ -52,47 +48,26 @@ export default function Login() {
     setMode((m) => (m === 'login' ? 'register' : 'login'))
     setError('')
     setShowPassword(false)
-    setAvatarState('idle')
-  }
-
-  const triggerAvatarCue = (cue: Exclude<AvatarCue, 'none'>) => {
-    setAvatarCue('none')
-    requestAnimationFrame(() => {
-      setAvatarCue(cue)
-      window.setTimeout(() => setAvatarCue('none'), 650)
-    })
   }
 
   return (
     <div className="login-page">
       <div className="login-stage">
         <section className="login-brand" aria-label="Marca Fervô">
-          <h1 className="brand-wordmark">Fervô</h1>
+          <img src={fervoLogoPreto} alt="Fervô" className="brand-logo-login" />
+          <span className="brand-made-pill">made</span>
           <p className="brand-tagline">Estrategista cultural e semiótico</p>
           <p className="brand-description">
             Acesse o Fervô e transforme observações do mundo em inteligência estratégica.
           </p>
         </section>
-        <section
-          className={`login-avatar-col ${avatarState} ${avatarCue} ${loading ? 'is-loading' : ''}`}
-          aria-label="Mascote Fervô"
-        >
+        <section className="login-avatar-col" aria-label="Mascote Fervô">
           <div className="login-avatar-shell">
-            <img src={fervoAvatar} alt="Mascote Fervô" className="login-avatar" />
+            <img src={fervoMascote} alt="Mascote Fervô" className="login-avatar" />
           </div>
         </section>
 
         <section className="login-card-shell">
-          <div className="eye-logo" aria-hidden="true">
-            <svg width="68" height="36" viewBox="0 0 68 36" fill="none">
-              <path d="M2 22 C 14 4, 54 4, 66 22" />
-              <path d="M2 22 C 14 34, 54 34, 66 22" />
-              <circle cx="34" cy="22" r="8" />
-              <line x1="20" y1="22" x2="48" y2="22" />
-              <path d="M44 18.5 L48 22 L44 25.5" />
-              <circle cx="34" cy="22" r="2.6" className="eye-logo-dot" />
-            </svg>
-          </div>
           <h2 className="card-title">
             {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
           </h2>
@@ -108,9 +83,6 @@ export default function Login() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                  onFocus={() => setAvatarState('look-email')}
-                  onClick={() => triggerAvatarCue('cue-email')}
-                  onBlur={() => setAvatarState('idle')}
                     placeholder="Seu nome"
                     required
                     autoComplete="name"
@@ -132,9 +104,6 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setAvatarState('look-email')}
-                  onClick={() => triggerAvatarCue('cue-email')}
-                  onBlur={() => setAvatarState('idle')}
                   placeholder="seu@email.com"
                   required
                   autoComplete="email"
@@ -155,9 +124,6 @@ export default function Login() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setAvatarState('peek-password')}
-                  onClick={() => triggerAvatarCue('cue-password')}
-                  onBlur={() => setAvatarState('idle')}
                   placeholder="Sua senha"
                   required
                   minLength={6}

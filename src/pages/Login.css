@@ -10,61 +10,45 @@
 .login-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  position: relative;
-}
-
-.login-page::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 22% 20%, rgba(255, 255, 255, 0.45), transparent 58%),
-    radial-gradient(ellipse at 85% 76%, rgba(176, 78, 27, 0.1), transparent 52%);
 }
 
 .login-stage {
   width: min(1120px, 100%);
   margin: 0 auto;
-  padding: 2rem 1.25rem;
+  padding: 1rem 1.25rem;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 0.95fr 1fr 0.95fr;
+  grid-template-columns: 0.9fr 0.8fr 1fr;
   align-items: center;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  position: relative;
-  z-index: 1;
+  gap: clamp(1rem, 3vw, 2.5rem);
 }
 
 .login-brand {
   color: var(--text-primary);
 }
 
-.brand-wordmark {
-  position: relative;
-  display: inline-block;
-  font-family: 'Playfair Display', var(--font-display);
-  font-size: clamp(4.2rem, 12vw, 7.6rem);
-  line-height: 0.88;
-  font-style: italic;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 1rem;
-  color: #171714;
+.brand-logo-login {
+  width: min(16rem, 76vw);
+  display: block;
 }
 
-.brand-wordmark::after {
-  content: '';
-  display: block;
-  width: 72px;
-  height: 4px;
+.brand-made-pill {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.85rem;
+  padding: 0 0.75rem;
   border-radius: 999px;
-  background: var(--focus-ring);
-  margin-top: 0.52rem;
+  border: 1px solid var(--border);
+  color: var(--title-accent);
+  font-size: 0.95rem;
+  background: var(--bg-secondary);
 }
 
 .brand-tagline {
-  font-size: 0.86rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--text-primary);
@@ -72,12 +56,12 @@
 }
 
 .brand-description {
-  margin-top: 1.35rem;
+  margin-top: 1rem;
   max-width: 29ch;
   color: #3f4542;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .login-avatar-col {
@@ -92,43 +76,22 @@
 }
 
 .login-avatar {
-  width: min(100%, 420px);
-  max-height: min(70vh, 720px);
+  width: min(100%, 360px);
+  max-height: min(60vh, 520px);
   object-fit: contain;
-  filter: drop-shadow(0 26px 28px rgba(80, 40, 20, 0.16));
+  filter: drop-shadow(0 18px 20px rgba(80, 40, 20, 0.14));
   transform-origin: 50% 92%;
   animation: avatar-breathe 3.8s ease-in-out infinite;
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.login-avatar-col.look-email .login-avatar {
-  transform: translateX(8px) rotate(1.6deg);
-}
-
-.login-avatar-col.peek-password .login-avatar {
-  transform: translateX(-5px) translateY(-3px) rotate(-1.4deg) scale(1.01);
-}
-
-.login-avatar-col.is-loading .login-avatar-shell {
-  animation: avatar-float 6.6s ease-in-out infinite, avatar-wiggle 900ms ease-in-out infinite;
-}
-
-.login-avatar-col.cue-email .login-avatar-shell {
-  animation: avatar-email-cue 620ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.login-avatar-col.cue-password .login-avatar-shell {
-  animation: avatar-password-cue 620ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-card-shell {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 16px;
   width: min(430px, 100%);
   justify-self: center;
-  padding: 2.35rem 2rem 1.6rem;
-  box-shadow: 0 16px 40px -20px rgba(80, 50, 40, 0.26), 0 4px 14px -6px rgba(80, 50, 40, 0.16);
+  padding: 1.8rem 1.6rem 1.4rem;
+  box-shadow: 0 8px 22px -16px rgba(80, 50, 40, 0.2);
 }
 
 @keyframes avatar-float {
@@ -151,78 +114,20 @@
   }
 }
 
-@keyframes avatar-wiggle {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  25% {
-    transform: translateY(-2px) rotate(-0.4deg);
-  }
-  75% {
-    transform: translateY(-2px) rotate(0.4deg);
-  }
-}
-
-@keyframes avatar-email-cue {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  30% {
-    transform: translateY(-7px) rotate(1.4deg);
-  }
-  62% {
-    transform: translateY(-3px) rotate(0.8deg);
-  }
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-}
-
-@keyframes avatar-password-cue {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  28% {
-    transform: translateY(-6px) rotate(-1.5deg);
-  }
-  58% {
-    transform: translateY(-2px) rotate(-0.9deg);
-  }
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-}
-
-.eye-logo {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.95rem;
-}
-
-.eye-logo svg {
-  stroke: var(--logo-olive);
-}
-
-.eye-logo .eye-logo-dot {
-  fill: var(--logo-olive);
-  stroke: none;
-}
-
 .card-title {
-  text-align: center;
+  text-align: left;
   font-family: var(--font-body);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
-  color: var(--title-accent);
+  color: var(--text-primary);
 }
 
 .title-underline {
-  width: 40px;
-  height: 3px;
+  width: 100%;
+  height: 1px;
   border-radius: 999px;
-  background: var(--focus-ring);
-  margin: 0.55rem auto 1.7rem;
+  background: var(--border);
+  margin: 0.7rem 0 1.3rem;
 }
 
 .login-form .form-group {
@@ -314,10 +219,10 @@
 
 .btn-login {
   width: 100%;
-  height: 52px;
+  height: 48px;
   background: var(--accent);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: white;
   font-size: 0.96rem;
   font-weight: 500;
@@ -357,13 +262,8 @@
 
 .card-divider {
   height: 1px;
-  margin: 1.05rem 0 0.7rem;
-  background: linear-gradient(
-    to right,
-    transparent,
-    color-mix(in srgb, var(--text-placeholder) 40%, transparent),
-    transparent
-  );
+  margin: 0.9rem 0 0.6rem;
+  background: var(--border);
 }
 
 .login-switch {
@@ -423,15 +323,14 @@
   }
 
   .login-avatar {
-    max-height: 280px;
-    width: min(62vw, 280px);
+    max-height: 220px;
+    width: min(58vw, 220px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .login-avatar-shell,
-  .login-avatar,
-  .login-avatar-col.is-loading .login-avatar-shell {
+  .login-avatar {
     animation: none;
   }
 }
@@ -442,7 +341,7 @@
     border-radius: 16px;
   }
 
-  .brand-wordmark {
-    font-size: 4.25rem;
+  .brand-logo-login {
+    width: min(14rem, 78vw);
   }
 }

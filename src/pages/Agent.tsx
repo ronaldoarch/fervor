@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConversationsContext } from '../contexts/ConversationsContext'
 import * as conversationApi from '../services/conversationApi'
 import { sendToFervo, type ChatMessageContent } from '../services/chatApi'
+import fervoLogoPreto from '../assets/fervo-logo-preto.png'
+import fervoLogoBranco from '../assets/fervo-logo-branco.png'
+import fervoMascote from '../assets/fervo-mascote.png'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
   getFervoNotificationPermission,
@@ -57,6 +60,25 @@ interface SpeechRecognitionErrorEvent {
 const IMAGE_PAYLOAD_PREFIX = '[fervo-image]'
 const MAX_IMAGE_UPLOAD_MB = 40
 const MAX_IMAGE_UPLOAD_BYTES = MAX_IMAGE_UPLOAD_MB * 1024 * 1024
+
+function inferEtapaFromHistory(messages: Message[]): Etapa {
+  const lastAgent = [...messages].reverse().find((m) => m.role === 'agent')
+  if (!lastAgent) return 'inicio'
+  const txt = sanitizeAgentText(lastAgent.content).toLowerCase()
+
+  if (txt.includes('etapa 4') || txt.includes('so what')) return 'finalizado'
+  if (txt.includes('etapa 3') || txt.includes('o pivô')) return 'etapa3'
+  if (
+    txt.includes('etapa 2') ||
+    txt.includes('tensão psicológica') ||
+    txt.includes('aprofundamento (opcional)') ||
+    txt.includes('leitura complementar')
+  ) {
+    return 'etapa2'
+  }
+  if (txt.includes('etapa 1') || txt.includes('radar cultural')) return 'etapa2'
+  return 'inicio'
+}
 
 function serializeUserMessage(text: string, imageDataUrl?: string | null): string {
   if (!imageDataUrl) return text
@@ -312,6 +334,10 @@ export default function Agent() {
   }, [activeId, setMessages])
 
   const messages = storedMessages
+
+  useEffect(() => {
+    setEtapa(inferEtapaFromHistory(messages))
+  }, [messages])
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
@@ -713,8 +739,11 @@ export default function Agent() {
       <header className="agent-header">
         <div className="header-left">
           <button className="sidebar-toggle" onClick={() => setSidebarOpen((s) => !s)} aria-label="Abrir conversas">☰</button>
-          <div className="brand-chip" aria-hidden="true">🌿</div>
-          <h1>Fervô + Made</h1>
+          <div className="brand-logos-wrap">
+            <img className="brand-logo brand-logo-dark" src={fervoLogoPreto} alt="Logo Fervô" />
+            <img className="brand-logo brand-logo-light" src={fervoLogoBranco} alt="Logo Fervô" />
+          </div>
+          <span className="brand-made">Made</span>
           <span className="agent-badge">Agente de Tendência</span>
         </div>
         <nav className="header-nav">
@@ -843,6 +872,10 @@ export default function Agent() {
               alerta ao sair; em aparelhos muito restritivos o navegador pode pausar o site por um tempo.
             </p>
             <form onSubmit={handleSubmit} className="input-form">
+              <div className="input-brand-row" aria-hidden="true">
+                <img src={fervoMascote} alt="" className="input-mascot" />
+                <span>Fervô</span>
+              </div>
               <div className="input-actions">
                 <button
                   type="button"
