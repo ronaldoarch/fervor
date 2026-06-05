@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import fervoMascote from '../assets/fervo-mascote.png'
-import fervoLogoPreto from '../assets/fervo-logo-preto.png'
+import fervoMascote from '../assets/fervo-avatar.png'
+import fervoLogoBranco from '../assets/fervo-logo-branco.png'
 import './Login.css'
 
 type Mode = 'login' | 'register'
@@ -54,7 +54,9 @@ export default function Login() {
     <div className="login-page">
       <div className="login-stage">
         <section className="login-brand" aria-label="Marca Fervô">
-          <img src={fervoLogoPreto} alt="Fervô" className="brand-logo-login" />
+          <div className="brand-logo-login-shell">
+            <img src={fervoLogoBranco} alt="Fervô" className="brand-logo-login" />
+          </div>
           <span className="brand-made-pill">made</span>
           <p className="brand-tagline">Estrategista cultural e semiótico</p>
           <p className="brand-description">
