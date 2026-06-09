@@ -339,8 +339,11 @@ export default function Agent() {
   }, [messages])
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') =>
-    messagesEndRef.current?.scrollIntoView({ behavior })
-  useEffect(() => { scrollToBottom('auto') }, [activeId])
+    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
+  useEffect(() => {
+    const t = window.setTimeout(() => scrollToBottom('auto'), 0)
+    return () => window.clearTimeout(t)
+  }, [activeId])
   useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
   useEffect(() => {
     if (!typingMessageId) return
@@ -839,7 +842,7 @@ export default function Agent() {
             <div className="messages">
               {messages.length === 0 && !aguardando && (
                 <div className="empty-state">
-                  <p>Carregando a conversa…</p>
+                  <p>Preparando sua análise…</p>
                 </div>
               )}
               {messages.map((msg) => {
