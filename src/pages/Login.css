@@ -27,31 +27,22 @@
   color: var(--text-primary);
 }
 
-.brand-logo-login-shell {
-  width: min(16rem, 76vw);
-  border-radius: 12px;
-  background: #111;
-  padding: 0.45rem 0.65rem;
-}
-
-.brand-logo-login {
-  width: min(16rem, 76vw);
-  display: block;
-  object-fit: contain;
-}
-
 .brand-made-pill {
-  margin-top: 0.5rem;
+  margin-top: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 1.85rem;
-  padding: 0 0.75rem;
+  height: 2.2rem;
+  padding: 0 0.8rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  color: #7a4dff;
-  font-size: 0.95rem;
   background: var(--bg-secondary);
+}
+
+.brand-made-logo {
+  height: 1.2rem;
+  width: auto;
+  object-fit: contain;
 }
 
 .brand-tagline {
@@ -347,13 +338,5 @@
   .login-card-shell {
     padding: 1.8rem 1.05rem 1.3rem;
     border-radius: 16px;
-  }
-
-  .brand-logo-login-shell {
-    width: min(14rem, 78vw);
-  }
-
-  .brand-logo-login {
-    width: min(14rem, 78vw);
   }
 }
