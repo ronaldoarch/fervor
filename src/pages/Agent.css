@@ -428,7 +428,7 @@
   display: none;
 }
 
-.input-form textarea {
+.input-form textarea:not(.composer-textarea) {
   flex: 1;
   padding: 0.875rem 1rem;
   background: var(--bg-secondary);
@@ -439,22 +439,22 @@
   font-size: 0.95rem;
 }
 
-.input-form textarea:focus {
+.input-form textarea:not(.composer-textarea):focus {
   outline: none;
   border-color: var(--accent);
 }
 
-.input-form textarea::placeholder {
+.input-form textarea:not(.composer-textarea)::placeholder {
   color: var(--text-secondary);
   opacity: 0.7;
 }
 
-.input-form textarea:disabled {
+.input-form textarea:not(.composer-textarea):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.input-form button {
+.input-form button:not(.composer-add-btn):not(.composer-icon-btn):not(.composer-send-btn) {
   padding: 0.875rem 1.5rem;
   background: var(--accent);
   border: none;
@@ -464,11 +464,11 @@
   align-self: flex-end;
 }
 
-.input-form button:hover:not(:disabled) {
+.input-form button:not(.composer-add-btn):not(.composer-icon-btn):not(.composer-send-btn):hover:not(:disabled) {
   background: var(--accent-hover);
 }
 
-.input-form button:disabled {
+.input-form button:not(.composer-add-btn):not(.composer-icon-btn):not(.composer-send-btn):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -508,7 +508,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.25rem 0.35rem 0.25rem 0.35rem;
+  padding: 0.3rem 0.4rem;
   border-radius: 999px;
   border: 1px solid #d5cdee;
   background: #ffffff;
@@ -524,10 +524,13 @@
   color: #fff;
   font-size: 1.25rem;
   line-height: 1;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   flex-shrink: 0;
+  transform: translateY(-0.5px);
 }
 
 .composer-add-btn:hover:not(:disabled) {
