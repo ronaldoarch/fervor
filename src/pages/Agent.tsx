@@ -5,7 +5,7 @@ import { useConversationsContext } from '../contexts/ConversationsContext'
 import * as conversationApi from '../services/conversationApi'
 import { sendToFervo, type ChatMessageContent } from '../services/chatApi'
 import fervoMascote from '../assets/fervo-mascote.png'
-import madeLogoPreto from '../assets/made-logo-preto.png'
+import madeLogoPreto from '../assets/made-logo-preto.svg'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
   getFervoNotificationPermission,

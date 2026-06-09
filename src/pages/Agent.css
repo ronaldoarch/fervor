@@ -27,13 +27,11 @@
 }
 
 .brand-made-logo {
-  height: 1.9rem;
+  height: 1.25rem;
   width: auto;
-  aspect-ratio: 1024 / 258;
   object-fit: contain;
   object-position: left center;
   display: block;
-  border-radius: 4px;
 }
 
 .agent-badge {

@@ -35,13 +35,11 @@
 }
 
 .brand-made-logo {
-  height: 2.4rem;
+  height: 1.55rem;
   width: auto;
-  aspect-ratio: 1024 / 258;
   object-fit: contain;
   object-position: left center;
   display: block;
-  border-radius: 6px;
 }
 
 .brand-tagline {
