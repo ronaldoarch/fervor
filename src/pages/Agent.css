@@ -23,23 +23,17 @@
 .brand-made {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 2.2rem;
-  min-width: 7.5rem;
-  padding: 0 0.8rem;
-  border-radius: 999px;
-  border: 1px solid #ccbff8;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(69, 48, 132, 0.08);
+  justify-content: flex-start;
 }
 
 .brand-made-logo {
-  height: 1rem;
-  width: 5.6rem;
+  height: 1.9rem;
+  width: auto;
+  aspect-ratio: 1024 / 258;
   object-fit: contain;
-  object-position: center;
+  object-position: left center;
   display: block;
-  filter: saturate(1.2) contrast(1.1);
+  border-radius: 4px;
 }
 
 .agent-badge {
