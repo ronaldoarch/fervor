@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import fervoMascote from '../assets/fervo-avatar.png'
+import fervoMascote from '../assets/fervo-mascote.png'
 import fervoLogoBranco from '../assets/fervo-logo-branco.png'
 import './Login.css'
 
@@ -65,7 +65,7 @@ export default function Login() {
         </section>
         <section className="login-avatar-col" aria-label="Mascote Fervô">
           <div className="login-avatar-shell">
-            <img src={fervoMascote} alt="Mascote Fervô" className="login-avatar" />
+            <img src={fervoMascote} alt="Personagem Fervô" className="login-avatar" />
           </div>
         </section>
 

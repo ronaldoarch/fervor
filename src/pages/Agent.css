@@ -31,16 +31,13 @@
 }
 
 .brand-avatar {
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
+  width: 2.4rem;
+  height: 1.2rem;
   object-fit: contain;
-  background: #fff;
-  border: 1px solid var(--border);
 }
 
 .brand-name {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--text-primary);
   font-weight: 500;
   line-height: 1;
@@ -56,7 +53,7 @@
   font-size: 0.88rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: var(--title-accent);
+  color: #7a4dff;
   background: var(--bg-secondary);
 }
 
@@ -176,7 +173,7 @@
 .btn-new-chat {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: var(--accent);
+  background: #7a4dff;
   border: none;
   border-radius: 8px;
   color: white;
@@ -186,7 +183,7 @@
 }
 
 .btn-new-chat:hover {
-  background: var(--accent-hover);
+  background: #6a40e6;
 }
 
 .conversations-list {
@@ -219,7 +216,7 @@
 
 .conv-item.active {
   background: var(--bg-tertiary);
-  color: var(--accent);
+  color: #7a4dff;
 }
 
 .conv-title {
@@ -260,8 +257,8 @@
 }
 
 .btn-export-pdf:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: #7a4dff;
+  color: #7a4dff;
 }
 
 .btn-export-pdf:disabled {
@@ -270,8 +267,8 @@
 }
 
 .btn-export-pdf.tts-on {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: #7a4dff;
+  color: #7a4dff;
 }
 
 .chat-container {
@@ -313,7 +310,7 @@
 
 .message-user {
   align-self: flex-end;
-  background: var(--accent);
+  background: #7a4dff;
   color: white;
 }
 
@@ -342,7 +339,7 @@
 }
 
 .message-content strong {
-  color: var(--accent);
+  color: #7a4dff;
 }
 
 .message-image {
@@ -366,7 +363,7 @@
 .typing-dots span {
   width: 6px;
   height: 6px;
-  background: var(--accent);
+  background: #7a4dff;
   border-radius: 50%;
   animation: typing-bounce 1.4s ease-in-out infinite;
 }
@@ -381,7 +378,7 @@
 }
 
 .typewriter-cursor {
-  color: var(--accent);
+  color: #7a4dff;
   font-weight: 300;
   animation: cursor-blink 0.8s step-end infinite;
 }
@@ -402,15 +399,15 @@
 .input-form {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.65rem 0 0.35rem;
+  gap: 0.35rem;
+  padding: 0.45rem 0 0.2rem;
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, var(--bg-primary), color-mix(in srgb, var(--bg-primary) 72%, transparent));
+  background: linear-gradient(to top, var(--bg-primary), color-mix(in srgb, var(--bg-primary) 82%, transparent));
 }
 
 .input-brand-row {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 0.4rem;
   color: var(--text-secondary);
@@ -528,27 +525,27 @@
 }
 
 .composer-shell {
-  min-height: 3rem;
-  width: min(100%, 980px);
+  min-height: 2.75rem;
+  width: min(100%, 860px);
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.38rem 0.45rem 0.38rem 0.5rem;
+  gap: 0.35rem;
+  padding: 0.25rem 0.35rem 0.25rem 0.35rem;
   border-radius: 999px;
-  border: 1px solid #2a2a2a;
-  background: #202123;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  border: 1px solid #d5cdee;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(31, 22, 52, 0.12);
 }
 
 .composer-add-btn {
-  width: 2rem;
-  height: 2rem;
+  width: 1.8rem;
+  height: 1.8rem;
   border-radius: 999px;
   border: none;
-  background: transparent;
-  color: #f1f1f1;
-  font-size: 1.6rem;
+  background: #7a4dff;
+  color: #fff;
+  font-size: 1.25rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -557,7 +554,7 @@
 }
 
 .composer-add-btn:hover:not(:disabled) {
-  background: #2d2f33;
+  background: #6a40e6;
 }
 
 .composer-textarea {
@@ -567,53 +564,53 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #f4f4f5;
+  color: #151320;
   resize: none;
-  font-size: 1.02rem;
+  font-size: 0.95rem;
   line-height: 1.4;
   padding: 0.38rem 0.1rem;
 }
 
 .composer-textarea::placeholder {
-  color: #adadb8;
+  color: #938da7;
 }
 
 .composer-right {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   margin-left: 0.15rem;
 }
 
 .composer-icon-btn {
-  width: 2rem;
-  height: 2rem;
+  width: 1.85rem;
+  height: 1.85rem;
   border-radius: 999px;
   border: none;
   background: transparent;
-  color: #f4f4f5;
-  font-size: 1rem;
+  color: #7a4dff;
+  font-size: 1.15rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .composer-icon-btn:hover:not(:disabled) {
-  background: #2d2f33;
+  background: #f2edff;
 }
 
 .composer-icon-btn.listening {
-  color: #f4a261;
+  color: #6a40e6;
 }
 
 .composer-send-btn {
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 1.95rem;
+  height: 1.95rem;
   border-radius: 999px;
   border: none;
-  background: #fff;
-  color: #121212;
-  font-size: 0.95rem;
+  background: #2d2f33;
+  color: #fff;
+  font-size: 0.8rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -623,12 +620,12 @@
 }
 
 .composer-send-btn:hover:not(:disabled) {
-  background: #f1f1f1;
+  background: #1f2124;
 }
 
 .composer-send-btn:disabled {
-  background: #84848a;
-  color: #ddd;
+  background: #b2a7d8;
+  color: #efecf8;
 }
 
 .legacy-actions {

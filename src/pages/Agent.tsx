@@ -5,6 +5,7 @@ import { useConversationsContext } from '../contexts/ConversationsContext'
 import * as conversationApi from '../services/conversationApi'
 import { sendToFervo, type ChatMessageContent } from '../services/chatApi'
 import fervoMascote from '../assets/fervo-mascote.png'
+import fervoLogoBranco from '../assets/fervo-logo-branco.png'
 import { sanitizeAgentText } from '../utils/sanitizeAgentText'
 import {
   getFervoNotificationPermission,
@@ -337,7 +338,9 @@ export default function Agent() {
     setEtapa(inferEtapaFromHistory(messages))
   }, [messages])
 
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') =>
+    messagesEndRef.current?.scrollIntoView({ behavior })
+  useEffect(() => { scrollToBottom('auto') }, [activeId])
   useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
   useEffect(() => {
     if (!typingMessageId) return
@@ -419,7 +422,7 @@ export default function Agent() {
     }
     const SpeechRecognitionAPI = w.SpeechRecognition || w.webkitSpeechRecognition
     if (!SpeechRecognitionAPI) {
-      setSpeechError('Seu navegador não suporta comando de voz.')
+      setSpeechError('Comando de voz indisponível neste navegador.')
       return
     }
 
@@ -439,7 +442,11 @@ export default function Agent() {
       }
     }
     recognition.onerror = (event) => {
-      setSpeechError(`Falha no reconhecimento de voz: ${event.error}`)
+      if (event.error === 'not-allowed') {
+        setSpeechError('Permissão de microfone bloqueada. Ative o microfone no navegador.')
+        return
+      }
+      setSpeechError('Não foi possível usar o microfone agora. Tente novamente.')
     }
     recognition.onend = () => setListening(false)
     recognitionRef.current = recognition
@@ -746,7 +753,7 @@ export default function Agent() {
         <div className="header-left">
           <button className="sidebar-toggle" onClick={() => setSidebarOpen((s) => !s)} aria-label="Abrir conversas">☰</button>
           <div className="brand-lockup">
-            <img className="brand-avatar" src={fervoMascote} alt="Fervô" />
+            <img className="brand-avatar" src={fervoLogoBranco} alt="Fervô" />
             <span className="brand-name">Fervô</span>
           </div>
           <span className="brand-made">Made</span>
@@ -916,7 +923,7 @@ export default function Agent() {
                     title={speechAvailable ? 'Comando de voz' : 'Comando de voz indisponível neste navegador'}
                     aria-label={listening ? 'Parar gravação de voz' : 'Iniciar gravação de voz'}
                   >
-                    🎙
+                    ●
                   </button>
                   <button
                     type="submit"
@@ -930,10 +937,6 @@ export default function Agent() {
                 </div>
               </div>
               {speechError && <p className="speech-error">{speechError}</p>}
-              <div className="input-brand-row" aria-hidden="true">
-                <img src={fervoMascote} alt="" className="input-mascot" />
-                <span>Fervô</span>
-              </div>
               <div className="legacy-actions" hidden>
                 <button
                   type="button"
