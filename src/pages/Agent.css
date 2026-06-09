@@ -27,8 +27,9 @@
 }
 
 .brand-made-logo {
-  height: 1.25rem;
+  height: 2.35rem;
   width: auto;
+  aspect-ratio: 3349 / 847;
   object-fit: contain;
   object-position: left center;
   display: block;

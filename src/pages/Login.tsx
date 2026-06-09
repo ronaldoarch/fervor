@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import fervoMascote from '../assets/fervo-avatar.png'
-import madeLogoPreto from '../assets/made-logo-preto.svg'
+import madeLogoPreto from '../assets/made-logo-preto.png'
 import './Login.css'
 
 type Mode = 'login' | 'register'
