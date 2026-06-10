@@ -274,6 +274,7 @@ export default function Agent() {
   const [ttsEnabled, setTtsEnabled] = useState(false)
   const [selectedImageDataUrl, setSelectedImageDataUrl] = useState<string | null>(null)
   const [selectedImageName, setSelectedImageName] = useState<string | null>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -358,18 +359,31 @@ export default function Agent() {
     setEtapa(inferEtapaFromHistory(messages))
   }, [messages])
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') =>
+  const isWelcomeOnlyView =
+    messages.length > 0 && messages.every((m) => m.role === 'agent') && !aguardando
+
+  const scrollMessages = (behavior: ScrollBehavior = 'smooth') => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    if (isWelcomeOnlyView) {
+      container.scrollTo({ top: 0, behavior })
+      return
+    }
     messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
+  }
+
   useEffect(() => {
-    const t = window.setTimeout(() => scrollToBottom('auto'), 0)
+    const t = window.setTimeout(() => scrollMessages('auto'), 0)
     return () => window.clearTimeout(t)
-  }, [activeId])
-  useEffect(() => { scrollToBottom() }, [messages, aguardando, typingMessageId])
+  }, [activeId, isWelcomeOnlyView])
   useEffect(() => {
-    if (!typingMessageId) return
-    const t = setInterval(scrollToBottom, 80)
+    scrollMessages()
+  }, [messages, aguardando, typingMessageId, isWelcomeOnlyView])
+  useEffect(() => {
+    if (!typingMessageId || isWelcomeOnlyView) return
+    const t = setInterval(() => scrollMessages('auto'), 80)
     return () => clearInterval(t)
-  }, [typingMessageId])
+  }, [typingMessageId, isWelcomeOnlyView])
 
   const addMessage = (role: 'agent' | 'user', content: string, analise?: unknown) => {
     addMessageAndReturn(role, content, analise)
@@ -859,7 +873,8 @@ export default function Agent() {
             </button>
           </div>
           <div className="chat-container">
-            <div className="messages">
+            <div className="messages" ref={messagesContainerRef}>
+              <div className="messages-spacer" aria-hidden="true" />
               {messages.length === 0 && !aguardando && (
                 <div className="empty-state">
                   <p>Preparando sua análise…</p>

@@ -276,9 +276,13 @@
   padding: 0.5rem 0 0.75rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 0.75rem;
   -webkit-overflow-scrolling: touch;
+}
+
+.messages-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .message {
@@ -286,6 +290,7 @@
   padding: 0.65rem 1rem;
   border-radius: var(--radius);
   line-height: 1.38;
+  flex-shrink: 0;
 }
 
 .message-user {
