@@ -20,6 +20,13 @@ export function verifyToken(token) {
   }
 }
 
+export function isTokenStale(decoded, passwordChangedAt) {
+  return Boolean(
+    passwordChangedAt &&
+      (!decoded?.iat || decoded.iat * 1000 < passwordChangedAt.getTime())
+  )
+}
+
 export async function authMiddleware(req, res, next) {
   const auth = req.headers.authorization
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null
@@ -32,11 +39,15 @@ export async function authMiddleware(req, res, next) {
   }
   const user = await prisma.user.findUnique({
     where: { id: decoded.userId },
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, email: true, name: true, role: true, passwordChangedAt: true },
   })
   if (!user) {
     return res.status(401).json({ error: 'Usuário não encontrado' })
   }
-  req.user = user
+  if (isTokenStale(decoded, user.passwordChangedAt)) {
+    return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' })
+  }
+  const { passwordChangedAt: _, ...safeUser } = user
+  req.user = safeUser
   next()
 }

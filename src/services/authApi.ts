@@ -66,6 +66,28 @@ export async function register(
   return data
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Erro ao solicitar recuperação de senha')
+  return data
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Erro ao redefinir senha')
+  return data
+}
+
 export async function me(): Promise<User | null> {
   const token = getToken()
   if (!token) return null

@@ -30,6 +30,7 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<Login />} />
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Agent />} />
           <Route path="admin" element={<AdminPage />} />

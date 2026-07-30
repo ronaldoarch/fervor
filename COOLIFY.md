@@ -23,9 +23,14 @@ O Fervor usa **PostgreSQL** para usuários e conversas. É necessário um banco 
 | `OPENAI_MODEL` | Não | Modelo (padrão: gpt-4o) |
 | `OPENCLAW_GATEWAY_URL` | Não | URL do gateway OpenClaw |
 | `OPENCLAW_GATEWAY_TOKEN` | Não | Token do gateway OpenClaw |
+| `RESEND_API_KEY` | Sim** | Chave da API do Resend (`re_...`) |
+| `EMAIL_FROM` | Sim** | Remetente em domínio verificado (ex: `Fervô <nao-responda@seudominio.com>`) |
+| `APP_URL` | Sim** | URL pública, sem barra final (ex: `https://fervo.seudominio.com`) |
 | `PORT` | Não | Porta interna (padrão: 3001) |
 
 \* Se OpenClaw estiver configurado, a OpenAI é usada como fallback.
+
+\** Obrigatórias para a recuperação de senha por e-mail.
 
 ---
 
@@ -56,6 +61,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - APP_URL=${APP_URL}
       - PORT=3001
     depends_on:
       - postgres

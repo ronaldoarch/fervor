@@ -52,7 +52,14 @@ Crie `.env` na raiz:
 DATABASE_URL=postgresql://user:password@localhost:5432/fervor
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o  # opcional
+RESEND_API_KEY=re_...
+EMAIL_FROM=Fervô <nao-responda@seudominio.com>
+APP_URL=https://fervo.seudominio.com
 ```
+
+Para habilitar **Esqueceu sua senha?**, adicione e verifique seu domínio no Resend,
+crie uma API key e configure as três últimas variáveis no ambiente de produção.
+O link enviado expira em 30 minutos e pode ser usado somente uma vez.
 
 ### Banco de dados (PostgreSQL)
 

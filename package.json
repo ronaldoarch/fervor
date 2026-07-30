@@ -34,7 +34,8 @@
     "prisma": "^6.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.0"
+    "react-router-dom": "^6.21.0",
+    "resend": "^6.18.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
